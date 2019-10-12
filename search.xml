@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title></title>
-    <url>%2F2019%2F10%2F12%2F2019-10-12%2F</url>
-    <content type="text"><![CDATA[#]]></content>
-  </entry>
-  <entry>
     <title><![CDATA[MAC上使用MWeb写博客自动同步印象笔记、博客园、github、csdn平台]]></title>
     <url>%2F2019%2F10%2F12%2FMAC%E4%B8%8A%E4%BD%BF%E7%94%A8MWeb%E5%86%99%E5%8D%9A%E5%AE%A2%E8%87%AA%E5%8A%A8%E5%90%8C%E6%AD%A5%E5%8D%B0%E8%B1%A1%E7%AC%94%E8%AE%B0%E3%80%81%E5%8D%9A%E5%AE%A2%E5%9B%AD%E3%80%81github%E3%80%81csdn%E5%B9%B3%E5%8F%B0%2F</url>
     <content type="text"><![CDATA[目标： 本地写博客自动同步到印象笔记，github、csdn、cnblogs、jianshu。统一采用Markdown的格式进行记录。 第一，本地写博客的工具。不过说，选择MWeb，好用稳定方便，不多安利了。 第二，怎样自动同步，MWeb一键式，且看下文 实施步骤 本地写博客。使用MWeb，可以截图粘贴，不要太好用。现在MWeb是收费，说实话找个破解版还是挺不容易的，直接花点钱省点时间吧。 使用github账号搭建博客。网上教程颇多，不重复造轮子。我搭建出来的效果：https://zhangtinglu.github.io/ 博客园，注册账号即可。样式一般，但是比较专注，推荐。 csdn，样式做的挺好，就是感觉广告太多。直接注册账号即可。 简书，主要就是注册几个主流账号吧。但是这个支持的不是很好，pass了 部署过程1. 图床设置先配置这个主要是后面有截图的，方便图片上传。这个是指针对自己想单独存图片的，本宝宝没有这个需求，所以各位看官请自行搜一下哈，表示网上大部分都是需要交钱给图片服务提供商的哦 2. 印象笔记因为本宝宝工作中使用印象笔记已经成习惯，所以大家首先必须得有个账号~~点击下图，傻瓜式添加即可。 3. 博客园将下面的信息改成自己对应的信息即可 4. csdncsdn不多说，一个套路。但是但是但是，由于csdn自己不稳定，报错的概率非常大，一把心酸泪，各位看官大佬，自导这个报错原因的求指教~~ http://blog.csdn.net/**http://write.blog.csdn.net/xmlrpc/index 5. github首先，乖乖的找一套教程在github上搞出https://zhangtinglu.github.io/这个效果，不啰嗦。接着由于本宝宝机器擅长命令行，所以也不整啥静态页面了，😝😝😝😝，有需求的自行处理，嘻嘻~~ 小tips hexo删除文章 1rm -rf ~/source/_posts/filename &amp;&amp; hexo d -g hexo基本使用 12hexo new &quot;blog titile&quot; &quot;tags&quot; #创建文章，并加入tagshexo d -g #发布并部署文章 hexo配置 1直接配置项目下面的_config.yml文件，没啥好说的，打开文件基本就会。 参考地址https://blog.csdn.net/Primary_wind/article/details/79156908https://www.cnblogs.com/cmi-sh-love/p/Mac-xia-ru-he-shi-yongMWEB-fa-bu-bo-ke-dao-bo-ke-y.htmlhttps://zh.mweb.im/15303685987267.html]]></content>
