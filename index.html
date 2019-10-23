@@ -312,6 +312,188 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/23/mysql5-7与mysql8-0关于with-rollup-order-by处理上的区别/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhangtinglu">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/lulu.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="阿尔卑斯LOVE">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/10/23/mysql5-7与mysql8-0关于with-rollup-order-by处理上的区别/" itemprop="url">mysql5.7与mysql8.0关于with rollup order by处理上的区别</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-23T16:39:09+08:00">
+                2019-10-23
+              </time>
+            
+
+            
+              <span class="post-meta-divider">|</span>
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-check-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">更新于&#58;</span>
+              
+              <time title="更新于" itemprop="dateModified" datetime="2019-10-23T17:59:21+08:00">
+                2019-10-23
+              </time>
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/10/23/mysql5-7与mysql8-0关于with-rollup-order-by处理上的区别/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/10/23/mysql5-7与mysql8-0关于with-rollup-order-by处理上的区别/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h4 id="需求："><a href="#需求：" class="headerlink" title="需求："></a>需求：</h4><p>常规问题，group by之后根据<strong>指定字段</strong>进行排序，如下根据c字段排序。<br>eg：select a,b,count(*) from tb_1 group by a,b with rollup order by c;</p>
+<h4 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h4><h5 id="Q1：5-7就不支持with-rollup-与-order-by-distinct-一起用，这么优秀的功能，为啥不支持呢？"><a href="#Q1：5-7就不支持with-rollup-与-order-by-distinct-一起用，这么优秀的功能，为啥不支持呢？" class="headerlink" title="Q1：5.7就不支持with rollup 与 order by(distinct)一起用，这么优秀的功能，为啥不支持呢？"></a>Q1：5.7就不支持with rollup 与 order by(distinct)一起用，这么优秀的功能，为啥不支持呢？</h5><p>因为内部数据排序实在聚合计算之前，最后聚合列是直接被加在最后面的。并且5.7group by默认是排序的。如果从一开始就已经拍好顺序了，那后面也就不会再排序或者去重，那自然也就无法支持自定义order by或者distinct操作了。</p>
+<h5 id="Q2：8-0-12开始支持，那8-0-12为啥能支持呢？以及最后出现的GROUPING函数是干啥的？"><a href="#Q2：8-0-12开始支持，那8-0-12为啥能支持呢？以及最后出现的GROUPING函数是干啥的？" class="headerlink" title="Q2：8.0.12开始支持，那8.0.12为啥能支持呢？以及最后出现的GROUPING函数是干啥的？"></a>Q2：8.0.12开始支持，那8.0.12为啥能支持呢？以及最后出现的GROUPING函数是干啥的？</h5><p>待研究，目测是SQL的执行顺序变了吧<br><a href="https://mysqlserverteam.com/mysql-8-0-grouping-function/" target="_blank" rel="noopener">https://mysqlserverteam.com/mysql-8-0-grouping-function/</a></p>
+<h5 id="Q3：用一个例子说明支持后的使用效果吧"><a href="#Q3：用一个例子说明支持后的使用效果吧" class="headerlink" title="Q3：用一个例子说明支持后的使用效果吧"></a>Q3：用一个例子说明支持后的使用效果吧</h5><p>表结构如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@test05:05:10&gt;select * from t1;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | c    |</span><br><span class="line">+------+------+------+</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">+------+------+------+</span><br></pre></td></tr></table></figure></p>
+<p>5.7支持group by字段指定排序，而8.0是不支持的<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">5.7</span><br><span class="line">root@test05:11:22&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a ASC , b DESC WITH ROLLUP;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | SUM  |</span><br><span class="line">+------+------+------+</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  111 | NULL |   23 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  222 | NULL |   45 |</span><br><span class="line">| NULL | NULL |   68 |</span><br><span class="line">+------+------+------+</span><br><span class="line">7 rows in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">8.0</span><br><span class="line">root@test05:13:09&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a ASC , b DESC WITH ROLLUP;</span><br><span class="line">ERROR 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near &apos;ASC , b DESC WITH ROLLUP&apos; at line 1</span><br></pre></td></tr></table></figure></p>
+<p>5.7不支持order by，而8.0开始支持order by<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">5.7</span><br><span class="line">root@test05:13:04&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a, b WITH ROLLUP ORDER BY a,b;</span><br><span class="line">ERROR 1221 (HY000): Incorrect usage of CUBE/ROLLUP and ORDER BY</span><br><span class="line"></span><br><span class="line">8.0</span><br><span class="line">root@test05:13:13&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a, b WITH ROLLUP ORDER BY a,b;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | SUM  |</span><br><span class="line">+------+------+------+</span><br><span class="line">| NULL | NULL |   68 |</span><br><span class="line">|  111 | NULL |   23 |</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  222 | NULL |   45 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">+------+------+------+</span><br><span class="line">7 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure></p>
+<p>8.0支持order by任意列<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">5.7</span><br><span class="line">root@test05:18:33&gt;SELECT a, b, c, SUM(c) as SUM FROM t1 GROUP BY a, b WITH ROLLUP ORDER BY c desc;</span><br><span class="line">ERROR 1221 (HY000): Incorrect usage of CUBE/ROLLUP and ORDER BY</span><br><span class="line"></span><br><span class="line">8.0</span><br><span class="line">root@test05:18:38&gt;SELECT a, b, c, SUM(c) as SUM FROM t1 GROUP BY a, b WITH ROLLUP ORDER BY c;</span><br><span class="line">+------+------+------+------+</span><br><span class="line">| a    | b    | c    | SUM  |</span><br><span class="line">+------+------+------+------+</span><br><span class="line">|  111 |   11 |   11 |   11 |</span><br><span class="line">|  111 |   12 |   12 |   12 |</span><br><span class="line">|  111 | NULL |   12 |   23 |</span><br><span class="line">|  222 |   22 |   22 |   22 |</span><br><span class="line">|  222 |   23 |   23 |   23 |</span><br><span class="line">|  222 | NULL |   23 |   45 |</span><br><span class="line">| NULL | NULL |   23 |   68 |</span><br><span class="line">+------+------+------+------+</span><br></pre></td></tr></table></figure></p>
+<p>8.0的GROUPING函数可以实现和5.7同样的效果<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">5.7</span><br><span class="line">root@test05:20:01&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a,b WITH ROLLUP;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | SUM  |</span><br><span class="line">+------+------+------+</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  111 | NULL |   23 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">|  222 | NULL |   45 |</span><br><span class="line">| NULL | NULL |   68 |</span><br><span class="line">+------+------+------+</span><br><span class="line">7 rows in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">8.0</span><br><span class="line">root@test05:19:38&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a ,b WITH ROLLUP ORDER BY GROUPING(a), a, GROUPING(b), b;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | SUM  |</span><br><span class="line">+------+------+------+</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  111 | NULL |   23 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">|  222 | NULL |   45 |</span><br><span class="line">| NULL | NULL |   68 |</span><br><span class="line">+------+------+------+</span><br><span class="line">7 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure></p>
+<p>参考文档：<br><a href="https://mysqlserverteam.com/improvements-to-rollup-in-mysql/" target="_blank" rel="noopener">https://mysqlserverteam.com/improvements-to-rollup-in-mysql/</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/22/《PostgrepSQL指南-内幕探索》读书笔记/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1073,7 +1255,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-count">5</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
