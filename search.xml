@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title><![CDATA[测试流程博客]]></title>
-    <url>%2F2020%2F03%2F08%2F%E6%B5%8B%E8%AF%95%E6%B5%81%E7%A8%8B%E5%8D%9A%E5%AE%A2%2F</url>
-    <content type="text"><![CDATA[如使用CSDN的看官，请转至notion地址(推荐)或者github pages，以获取更好的阅读体验。 1、在notion中写博客，比如这篇测试博客 2、导出csv 3、写脚本处理文件，unzip以及转到hexo对应的_post目录下 4、使用mweb一键发布csdn 5、快捷命令发布到github pages]]></content>
-  </entry>
-  <entry>
     <title><![CDATA[prophet使用手册]]></title>
     <url>%2F2019%2F12%2F03%2Fprophet%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C%2F</url>
     <content type="text"><![CDATA[目标：翻译下prophet官方文档，仅供参考。如果错误，欢迎指出，第一次使用。 1、安装1pip install fbprophet 本模块就不多说了，每个人的环境不同，各自根据https://facebook.github.io/prophet/docs/installation.html操作即可 2、快速开始让我们来看一下Peyton Manning的Wikipedia页面的日志每日页面浏览量的时间序列。这个部分讲了一个简单的demo。从维基百科上扒下来了Peyton Manning(原谅我真的不懂各种球☺️)的页面每天的访问量。这里就有一个问题，为啥要用这个数据呢？据说是这个数据有很好的代表性：多周期、变化的增长率、还能对特殊的日子建模(季后赛、超级碗)。文件自行去github上搞~~下面的这段代码就是快速开始的所有了(基于python的，还有一个基于R的版本，参考官方文档吧)12345678910111213141516171819202122import pandas as pdfrom fbprophet import Prophet# step1：从csv读入数据到pandasdf = pd.read_csv(&apos;../examples/example_wp_log_peyton_manning.csv&apos;)df.head()# step2：创建Prophet对象，灌入历史数据m = Prophet()m.fit(df)# step3：设置预测时间，365天future = m.make_future_dataframe(periods=365)future.tail()# step4：进行预测forecast = m.predict(future)forecast[[&apos;ds&apos;, &apos;yhat&apos;, &apos;yhat_lower&apos;, &apos;yhat_upper&apos;]].tail()# step5：画图(不是必须)fig1 = m.plot(forecast)fig2 = m.plot_components(forecast) #各个组件，后面会讲到。这里想到了，买机票的时候会有哪些月份便宜，每周哪天便宜。 注意：如果不是用notebook，而是使用的IDE之类的，需要import matplotlib as plt 画图了 plt.show() 3、饱和预测4、趋势变更5、周期、假日影响和回归6、乘法周期7、置信区间(不确定区间)8、异常点9、非日数据10、诊断(验证)]]></content>
+      <tags>
+        <tag>prophet</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[test]]></title>
+    <url>%2F2019%2F12%2F03%2F%E6%B5%8B%E8%AF%95%E6%B5%81%E7%A8%8B%E5%8D%9A%E5%AE%A2%2F</url>
+    <content type="text"><![CDATA[如使用CSDN的看官，请转至notion地址(推荐)或者github pages，以获取更好的阅读体验。 1、在notion中写博客，比如这篇测试博客 2、导出csv 3、写脚本处理文件，unzip以及转到hexo对应的_post目录下 4、使用mweb一键发布csdn 5、快捷命令发布到github pages]]></content>
       <tags>
         <tag>prophet</tag>
       </tags>
