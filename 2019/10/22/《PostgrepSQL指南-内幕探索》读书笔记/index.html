@@ -112,7 +112,7 @@
 <meta property="og:site_name" content="阿尔卑斯LOVE">
 <meta property="og:description" content="第一章脑图疑问Q1:pg_database和pg_class的区别？P2Q2:pg翻页是哪个？空格一页，enter一行Q3:pg_hba.conf和pg_ident.conf区别？权限控制具体怎么做的？Q4:mac上的postgrepsql的文件路径？/usr/local/var/postgresQ5:–with-segsize这个参数设置的合理大小，文件过多的影响是啥？Q6:表空间具体的作用是啥">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-10-23T03:52:11.224Z">
+<meta property="og:updated_time" content="2019-11-06T02:03:07.968Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="《PostgrepSQL指南-内幕探索》读书笔记">
 <meta name="twitter:description" content="第一章脑图疑问Q1:pg_database和pg_class的区别？P2Q2:pg翻页是哪个？空格一页，enter一行Q3:pg_hba.conf和pg_ident.conf区别？权限控制具体怎么做的？Q4:mac上的postgrepsql的文件路径？/usr/local/var/postgresQ5:–with-segsize这个参数设置的合理大小，文件过多的影响是啥？Q6:表空间具体的作用是啥">
@@ -357,8 +357,8 @@
               
                 <span class="post-meta-item-text">更新于&#58;</span>
               
-              <time title="更新于" itemprop="dateModified" datetime="2019-10-23T11:52:11+08:00">
-                2019-10-23
+              <time title="更新于" itemprop="dateModified" datetime="2019-11-06T10:03:07+08:00">
+                2019-11-06
               </time>
             
           </span>
@@ -435,7 +435,7 @@
       
         <h4 id="第一章"><a href="#第一章" class="headerlink" title="第一章"></a>第一章</h4><h5 id="脑图"><a href="#脑图" class="headerlink" title="脑图"></a>脑图</h5><h5 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h5><p>Q1:pg_database和pg_class的区别？P2<br>Q2:pg翻页是哪个？空格一页，enter一行<br>Q3:pg_hba.conf和pg_ident.conf区别？权限控制具体怎么做的？<br>Q4:mac上的postgrepsql的文件路径？/usr/local/var/postgres<br>Q5:–with-segsize这个参数设置的合理大小，文件过多的影响是啥？<br>Q6:表空间具体的作用是啥？<br>Q7:pd_lower、pd_upper和图1.4是不是不对应，是不是我理解的不行？感觉这两个东西都是指向最近的那个元素，为啥呢？<br>Q8:有必要把B树在重新学习一边，每次都是不一样的理解，熟能生巧</p>
 <h4 id="第二章"><a href="#第二章" class="headerlink" title="第二章"></a>第二章</h4><h5 id="脑图-1"><a href="#脑图-1" class="headerlink" title="脑图"></a>脑图</h5><h5 id="疑问-1"><a href="#疑问-1" class="headerlink" title="疑问"></a>疑问</h5><p>这章写的比较简单，暂时没有啥问题。读完之后感觉比mysql架构上要清晰很多，用户友好。</p>
-<h4 id="第三章"><a href="#第三章" class="headerlink" title="第三章"></a>第三章</h4><h5 id="脑图-2"><a href="#脑图-2" class="headerlink" title="脑图"></a>脑图</h5><h5 id="疑问-2"><a href="#疑问-2" class="headerlink" title="疑问"></a>疑问</h5><p>Q1：P21页为啥有的结构用的是List有的用的Node？<br>Q2：P21页WINDOW是啥函数？<br>Q3：P21页select 1；这种的语法树是怎么样的？<br>Q4：P21页pg中的with子句是啥，mysql中没有？<br>Q5：P21页最后一部分setoption中的左子节点、右子节点干啥用的？<br>Q6：P21页叶节点和上层节点分别指的是啥？<br>Q7：P21页想想如果为啥整体上要这样设计，看看官方文档的详细说明？可以想想自己会怎么设计？<br>Q8：P21页找一个多重嵌套的例子来尝试进行语法解析？还有不同类型比如insert select 分别是怎么做的<br>Q9：</p>
+<h4 id="第三章"><a href="#第三章" class="headerlink" title="第三章"></a>第三章</h4><h5 id="脑图-2"><a href="#脑图-2" class="headerlink" title="脑图"></a>脑图</h5><h5 id="疑问-2"><a href="#疑问-2" class="headerlink" title="疑问"></a>疑问</h5><p>Q1：P21页为啥有的结构用的是List有的用的Node？<br>Q2：P21页WINDOW是啥函数？<br>Q3：P21页select 1；这种的语法树是怎么样的？<br>Q4：P21页pg中的with子句是啥，mysql中没有？<br>Q5：P21页最后一部分setoption中的左子节点、右子节点干啥用的？<br>Q6：P21页叶节点和上层节点分别指的是啥？<br>Q7：P21页想想如果为啥整体上要这样设计，看看官方文档的详细说明？可以想想自己会怎么设计？<br>Q8：P21页找一个多重嵌套的例子来尝试进行语法解析？还有不同类型比如insert select 分别是怎么做的<br>Q9：P22中提到的declare cursor是什么操作，有啥区别，为啥会有区别？<br>Q10：P23 CTE是个啥<br>Q11：P24只说到更多查询树细节可以查看官方文档。看完这一块，尝试着理解其中的设计逻辑？<br>Q12：P24中提到了规则系统，说这个有意思，找官方文档看下<br>Q13：P25中有2个问题，视图是不是不落库，是不是每次都是去读取元数据?为啥不能实时更新，现在可以了，是做了怎样的优化？有哪些限制，为啥会有这些限制？官方文档<br>Q14：pg不支持sql提示？设计者是怎样的情怀？插件pg_hint_plan尝试下<br>Q15：</p>
 
       
     </div>
@@ -563,7 +563,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-count">8</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -576,7 +576,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -639,7 +639,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
