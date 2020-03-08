@@ -437,14 +437,20 @@
       
         
           
-            <p>如使用CSDN的看官，请转至<a href="https://www.notion.so/luzhangting/365978af86654c328a4ef88f177f12e7" target="_blank" rel="noopener">notion地址</a>(推荐)或者<a href="https://zhangtinglu.github.io/" target="_blank" rel="noopener">github pages</a>，以获取更好的阅读体验。</p>
-<p>1、在notion中写博客，比如这篇测试博客</p>
-<p>2、导出csv</p>
-<p>3、写脚本处理文件，unzip以及转到hexo对应的_post目录下</p>
-<p>4、使用mweb一键发布csdn</p>
-<p>5、快捷命令发布到github pages</p>
-
-          
+          如使用CSDN的看官，请转至notion地址(推荐)或者github pages，以获取更好的阅读体验。
+1、在notion中写博客，比如这篇测试博客
+2、导出csv
+3、写脚本处理文件，unzip以及转到hexo对应的_post目录下
+4、使用mweb一键发布csdn
+5、快捷命令发布到githu
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2020/03/08/测试流程博客/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -616,17 +622,19 @@
       
         
           
-            <blockquote>
-<p>目标：翻译下prophet官方文档，仅供参考。如果错误，欢迎指出，第一次使用。</p>
-</blockquote>
-<h4 id="1、安装"><a href="#1、安装" class="headerlink" title="1、安装"></a>1、安装</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install fbprophet</span><br></pre></td></tr></table></figure>
-<p>本模块就不多说了，每个人的环境不同，各自根据<a href="https://facebook.github.io/prophet/docs/installation.html操作即可" target="_blank" rel="noopener">https://facebook.github.io/prophet/docs/installation.html操作即可</a></p>
-<h4 id="2、快速开始"><a href="#2、快速开始" class="headerlink" title="2、快速开始"></a>2、快速开始</h4><p>让我们来看一下Peyton Manning的Wikipedia页面的日志每日页面浏览量的时间序列。<br>这个部分讲了一个简单的demo。从维基百科上扒下来了Peyton Manning(原谅我真的不懂各种球☺️)的页面每天的访问量。<br>这里就有一个问题，为啥要用这个数据呢？据说是这个数据有很好的代表性：多周期、变化的增长率、还能对特殊的日子建模(季后赛、超级碗)。文件自行去github上搞~~<br>下面的这段代码就是快速开始的所有了(基于python的，还有一个基于R的版本，参考官方文档吧)<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">import pandas as pd</span><br><span class="line">from fbprophet import Prophet</span><br><span class="line"></span><br><span class="line"># step1：从csv读入数据到pandas</span><br><span class="line">df = pd.read_csv(&apos;../examples/example_wp_log_peyton_manning.csv&apos;)</span><br><span class="line">df.head()</span><br><span class="line"></span><br><span class="line"># step2：创建Prophet对象，灌入历史数据</span><br><span class="line">m = Prophet()</span><br><span class="line">m.fit(df)</span><br><span class="line"></span><br><span class="line"># step3：设置预测时间，365天</span><br><span class="line">future = m.make_future_dataframe(periods=365)</span><br><span class="line">future.tail()</span><br><span class="line"></span><br><span class="line"># step4：进行预测</span><br><span class="line">forecast = m.predict(future)</span><br><span class="line">forecast[[&apos;ds&apos;, &apos;yhat&apos;, &apos;yhat_lower&apos;, &apos;yhat_upper&apos;]].tail()</span><br><span class="line"></span><br><span class="line"># step5：画图(不是必须)</span><br><span class="line">fig1 = m.plot(forecast)</span><br><span class="line">fig2 = m.plot_components(forecast) #各个组件，后面会讲到。这里想到了，买机票的时候会有哪些月份便宜，每周哪天便宜。</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>注意：如果不是用notebook，而是使用的IDE之类的，需要import matplotlib as plt 画图了 plt.show()</p>
-</blockquote>
-<h4 id="3、饱和预测"><a href="#3、饱和预测" class="headerlink" title="3、饱和预测"></a>3、饱和预测</h4><h4 id="4、趋势变更"><a href="#4、趋势变更" class="headerlink" title="4、趋势变更"></a>4、趋势变更</h4><h4 id="5、周期、假日影响和回归"><a href="#5、周期、假日影响和回归" class="headerlink" title="5、周期、假日影响和回归"></a>5、周期、假日影响和回归</h4><h4 id="6、乘法周期"><a href="#6、乘法周期" class="headerlink" title="6、乘法周期"></a>6、乘法周期</h4><h4 id="7、置信区间-不确定区间"><a href="#7、置信区间-不确定区间" class="headerlink" title="7、置信区间(不确定区间)"></a>7、置信区间(不确定区间)</h4><h4 id="8、异常点"><a href="#8、异常点" class="headerlink" title="8、异常点"></a>8、异常点</h4><h4 id="9、非日数据"><a href="#9、非日数据" class="headerlink" title="9、非日数据"></a>9、非日数据</h4><h4 id="10、诊断-验证"><a href="#10、诊断-验证" class="headerlink" title="10、诊断(验证)"></a>10、诊断(验证)</h4>
           
+目标：翻译下prophet官方文档，仅供参考。如果错误，欢迎指出，第一次使用。
+
+1、安装1pip install fbprophet
+本模块就不多说了，每个人的环境不同，各自根据https://facebook.github.io/prophet/docs/installation.html操作
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/12/03/prophet使用手册/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -798,12 +806,18 @@
       
         
           
-            <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1 2 3</span><br><span class="line">4 5 6</span><br><span class="line">7 8 9</span><br><span class="line">1 2 3</span><br><span class="line">4 5 6</span><br><span class="line">7 8 9</span><br></pre></td></tr></table></figure>
-<p>1、获取第2-5行<br> sed -n ‘2,5p’ testfile</p>
-<p>2、获取2-3列<br>awk ‘{print $2 $3}’ testfile<br>可选cut(忘了吧，别记太多，脑袋不够用啊)</p>
-<p>cat test123 | awk ‘{print $2,$3}’ | sed -n ‘4,5p’ | xargs -n 1 echo</p>
-
-          
+          1234561 2 34 5 67 8 91 2 34 5 67 8 9
+1、获取第2-5行 sed -n ‘2,5p’ testfile
+2、获取2-3列awk ‘{print $2 $3}’ testfile可选cut(忘了吧，别记太多，脑袋不够用啊)
+cat test123 | awk ‘{p
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/11/27/shell脚本中获取指定行指定列来进行操作/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -975,17 +989,16 @@
       
         
           
-            <h4 id="需求："><a href="#需求：" class="headerlink" title="需求："></a>需求：</h4><p>常规问题，group by之后根据<strong>指定字段</strong>进行排序，如下根据c字段排序。<br>eg：select a,b,count(*) from tb_1 group by a,b with rollup order by c;</p>
-<h4 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h4><h5 id="Q1：5-7就不支持with-rollup-与-order-by-distinct-一起用，这么优秀的功能，为啥不支持呢？"><a href="#Q1：5-7就不支持with-rollup-与-order-by-distinct-一起用，这么优秀的功能，为啥不支持呢？" class="headerlink" title="Q1：5.7就不支持with rollup 与 order by(distinct)一起用，这么优秀的功能，为啥不支持呢？"></a>Q1：5.7就不支持with rollup 与 order by(distinct)一起用，这么优秀的功能，为啥不支持呢？</h5><p>因为内部数据排序实在聚合计算之前，最后聚合列是直接被加在最后面的。并且5.7group by默认是排序的。如果从一开始就已经拍好顺序了，那后面也就不会再排序或者去重，那自然也就无法支持自定义order by或者distinct操作了。</p>
-<h5 id="Q2：8-0-12开始支持，那8-0-12为啥能支持呢？以及最后出现的GROUPING函数是干啥的？"><a href="#Q2：8-0-12开始支持，那8-0-12为啥能支持呢？以及最后出现的GROUPING函数是干啥的？" class="headerlink" title="Q2：8.0.12开始支持，那8.0.12为啥能支持呢？以及最后出现的GROUPING函数是干啥的？"></a>Q2：8.0.12开始支持，那8.0.12为啥能支持呢？以及最后出现的GROUPING函数是干啥的？</h5><p>待研究，目测是SQL的执行顺序变了吧<br><a href="https://mysqlserverteam.com/mysql-8-0-grouping-function/" target="_blank" rel="noopener">https://mysqlserverteam.com/mysql-8-0-grouping-function/</a></p>
-<h5 id="Q3：用一个例子说明支持后的使用效果吧"><a href="#Q3：用一个例子说明支持后的使用效果吧" class="headerlink" title="Q3：用一个例子说明支持后的使用效果吧"></a>Q3：用一个例子说明支持后的使用效果吧</h5><p>表结构如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@test05:05:10&gt;select * from t1;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | c    |</span><br><span class="line">+------+------+------+</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">+------+------+------+</span><br></pre></td></tr></table></figure></p>
-<p>5.7支持group by字段指定排序，而8.0是不支持的<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">5.7</span><br><span class="line">root@test05:11:22&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a ASC , b DESC WITH ROLLUP;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | SUM  |</span><br><span class="line">+------+------+------+</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  111 | NULL |   23 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  222 | NULL |   45 |</span><br><span class="line">| NULL | NULL |   68 |</span><br><span class="line">+------+------+------+</span><br><span class="line">7 rows in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">8.0</span><br><span class="line">root@test05:13:09&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a ASC , b DESC WITH ROLLUP;</span><br><span class="line">ERROR 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near &apos;ASC , b DESC WITH ROLLUP&apos; at line 1</span><br></pre></td></tr></table></figure></p>
-<p>5.7不支持order by，而8.0开始支持order by<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">5.7</span><br><span class="line">root@test05:13:04&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a, b WITH ROLLUP ORDER BY a,b;</span><br><span class="line">ERROR 1221 (HY000): Incorrect usage of CUBE/ROLLUP and ORDER BY</span><br><span class="line"></span><br><span class="line">8.0</span><br><span class="line">root@test05:13:13&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a, b WITH ROLLUP ORDER BY a,b;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | SUM  |</span><br><span class="line">+------+------+------+</span><br><span class="line">| NULL | NULL |   68 |</span><br><span class="line">|  111 | NULL |   23 |</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  222 | NULL |   45 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">+------+------+------+</span><br><span class="line">7 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure></p>
-<p>8.0支持order by任意列<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">5.7</span><br><span class="line">root@test05:18:33&gt;SELECT a, b, c, SUM(c) as SUM FROM t1 GROUP BY a, b WITH ROLLUP ORDER BY c desc;</span><br><span class="line">ERROR 1221 (HY000): Incorrect usage of CUBE/ROLLUP and ORDER BY</span><br><span class="line"></span><br><span class="line">8.0</span><br><span class="line">root@test05:18:38&gt;SELECT a, b, c, SUM(c) as SUM FROM t1 GROUP BY a, b WITH ROLLUP ORDER BY c;</span><br><span class="line">+------+------+------+------+</span><br><span class="line">| a    | b    | c    | SUM  |</span><br><span class="line">+------+------+------+------+</span><br><span class="line">|  111 |   11 |   11 |   11 |</span><br><span class="line">|  111 |   12 |   12 |   12 |</span><br><span class="line">|  111 | NULL |   12 |   23 |</span><br><span class="line">|  222 |   22 |   22 |   22 |</span><br><span class="line">|  222 |   23 |   23 |   23 |</span><br><span class="line">|  222 | NULL |   23 |   45 |</span><br><span class="line">| NULL | NULL |   23 |   68 |</span><br><span class="line">+------+------+------+------+</span><br></pre></td></tr></table></figure></p>
-<p>8.0的GROUPING函数可以实现和5.7同样的效果<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">5.7</span><br><span class="line">root@test05:20:01&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a,b WITH ROLLUP;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | SUM  |</span><br><span class="line">+------+------+------+</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  111 | NULL |   23 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">|  222 | NULL |   45 |</span><br><span class="line">| NULL | NULL |   68 |</span><br><span class="line">+------+------+------+</span><br><span class="line">7 rows in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">8.0</span><br><span class="line">root@test05:19:38&gt;SELECT a, b, SUM(c) as SUM FROM t1 GROUP BY a ,b WITH ROLLUP ORDER BY GROUPING(a), a, GROUPING(b), b;</span><br><span class="line">+------+------+------+</span><br><span class="line">| a    | b    | SUM  |</span><br><span class="line">+------+------+------+</span><br><span class="line">|  111 |   11 |   11 |</span><br><span class="line">|  111 |   12 |   12 |</span><br><span class="line">|  111 | NULL |   23 |</span><br><span class="line">|  222 |   22 |   22 |</span><br><span class="line">|  222 |   23 |   23 |</span><br><span class="line">|  222 | NULL |   45 |</span><br><span class="line">| NULL | NULL |   68 |</span><br><span class="line">+------+------+------+</span><br><span class="line">7 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure></p>
-<p>参考文档：<br><a href="https://mysqlserverteam.com/improvements-to-rollup-in-mysql/" target="_blank" rel="noopener">https://mysqlserverteam.com/improvements-to-rollup-in-mysql/</a></p>
-
-          
+          需求：常规问题，group by之后根据指定字段进行排序，如下根据c字段排序。eg：select a,b,count(*) from tb_1 group by a,b with rollup order by c;
+问题：Q1：5.7就不支持with rollup 与 order by(disti
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/10/23/mysql5-7与mysql8-0关于with-rollup-order-by处理上的区别/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1157,11 +1170,15 @@
       
         
           
-            <h4 id="第一章"><a href="#第一章" class="headerlink" title="第一章"></a>第一章</h4><h5 id="脑图"><a href="#脑图" class="headerlink" title="脑图"></a>脑图</h5><h5 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h5><p>Q1:pg_database和pg_class的区别？P2<br>Q2:pg翻页是哪个？空格一页，enter一行<br>Q3:pg_hba.conf和pg_ident.conf区别？权限控制具体怎么做的？<br>Q4:mac上的postgrepsql的文件路径？/usr/local/var/postgres<br>Q5:–with-segsize这个参数设置的合理大小，文件过多的影响是啥？<br>Q6:表空间具体的作用是啥？<br>Q7:pd_lower、pd_upper和图1.4是不是不对应，是不是我理解的不行？感觉这两个东西都是指向最近的那个元素，为啥呢？<br>Q8:有必要把B树在重新学习一边，每次都是不一样的理解，熟能生巧</p>
-<h4 id="第二章"><a href="#第二章" class="headerlink" title="第二章"></a>第二章</h4><h5 id="脑图-1"><a href="#脑图-1" class="headerlink" title="脑图"></a>脑图</h5><h5 id="疑问-1"><a href="#疑问-1" class="headerlink" title="疑问"></a>疑问</h5><p>这章写的比较简单，暂时没有啥问题。读完之后感觉比mysql架构上要清晰很多，用户友好。</p>
-<h4 id="第三章"><a href="#第三章" class="headerlink" title="第三章"></a>第三章</h4><h5 id="脑图-2"><a href="#脑图-2" class="headerlink" title="脑图"></a>脑图</h5><h5 id="疑问-2"><a href="#疑问-2" class="headerlink" title="疑问"></a>疑问</h5><p>Q1：P21页为啥有的结构用的是List有的用的Node？<br>Q2：P21页WINDOW是啥函数？<br>Q3：P21页select 1；这种的语法树是怎么样的？<br>Q4：P21页pg中的with子句是啥，mysql中没有？<br>Q5：P21页最后一部分setoption中的左子节点、右子节点干啥用的？<br>Q6：P21页叶节点和上层节点分别指的是啥？<br>Q7：P21页想想如果为啥整体上要这样设计，看看官方文档的详细说明？可以想想自己会怎么设计？<br>Q8：P21页找一个多重嵌套的例子来尝试进行语法解析？还有不同类型比如insert select 分别是怎么做的<br>Q9：P22中提到的declare cursor是什么操作，有啥区别，为啥会有区别？<br>Q10：P23 CTE是个啥<br>Q11：P24只说到更多查询树细节可以查看官方文档。看完这一块，尝试着理解其中的设计逻辑？<br>Q12：P24中提到了规则系统，说这个有意思，找官方文档看下<br>Q13：P25中有2个问题，视图是不是不落库，是不是每次都是去读取元数据?为啥不能实时更新，现在可以了，是做了怎样的优化？有哪些限制，为啥会有这些限制？官方文档<br>Q14：pg不支持sql提示？设计者是怎样的情怀？插件pg_hint_plan尝试下<br>Q15：</p>
-
-          
+          第一章脑图疑问Q1:pg_database和pg_class的区别？P2Q2:pg翻页是哪个？空格一页，enter一行Q3:pg_hba.conf和pg_ident.conf区别？权限控制具体怎么做的？Q4:mac上的postgrepsql的文件路径？/usr/local/var/postgresQ
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/10/22/《PostgrepSQL指南-内幕探索》读书笔记/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1333,20 +1350,17 @@
       
         
           
-            <h4 id="背景描述"><a href="#背景描述" class="headerlink" title="背景描述"></a>背景描述</h4><p>mysql版本：5.7.21-21-log Percona Server (GPL), Release 21, Revision 2a37e4e<br>业务数据量：890G<br><img src="/uploads/15712963037411.jpg" alt=""><br><img src="/uploads/15712963214532.jpg" alt=""></p>
-<h4 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h4><h5 id="1、业务有大写入"><a href="#1、业务有大写入" class="headerlink" title="1、业务有大写入"></a>1、业务有大写入</h5><p>通过查看监控信息已经解析binlog，发现当时写入量并不大</p>
-<h5 id="2、当时是否切换binlog"><a href="#2、当时是否切换binlog" class="headerlink" title="2、当时是否切换binlog"></a>2、当时是否切换binlog</h5><p>经过确认，并没有</p>
-<h5 id="3、当时是否在刷写buffer-pool"><a href="#3、当时是否在刷写buffer-pool" class="headerlink" title="3、当时是否在刷写buffer pool"></a>3、当时是否在刷写buffer pool</h5><p><img src="/uploads/15712968259747.jpg" alt=""><br>经过确认，当时确实是在刷写buffer，但是数据量上对不上，这个量才10000*16K~~250M，与os刷的25G完全不是一个量级</p>
-<h5 id="4、是否与numactl有关"><a href="#4、是否与numactl有关" class="headerlink" title="4、是否与numactl有关"></a>4、是否与numactl有关</h5><p><img src="/uploads/15712969791527.jpg" alt=""><br>当时node0 11G,node1 30G。这个结论看不出啥东西</p>
-<h5 id="5、是否非mysql进程有关"><a href="#5、是否非mysql进程有关" class="headerlink" title="5、是否非mysql进程有关"></a>5、是否非mysql进程有关</h5><p><img src="/uploads/15712972233434.jpg" alt=""><br>看监控，非mysql的进程占用内存不超过500M，基本可以确认是mysql占用的内存资源，但是问题是暂用这个资源到底是在干啥呢</p>
-<h5 id="6、是否产生了大量的临时文件"><a href="#6、是否产生了大量的临时文件" class="headerlink" title="6、是否产生了大量的临时文件"></a>6、是否产生了大量的临时文件</h5><p>查看tmp监控，并没有发现当时产生大量的临时文件</p>
-<h5 id="7、业务重启，重连"><a href="#7、业务重启，重连" class="headerlink" title="7、业务重启，重连"></a>7、业务重启，重连</h5><p>看监控图，连接很稳定，并没有很大的变化</p>
-<h5 id="8、当时是否在使用xtrabackup进行备份"><a href="#8、当时是否在使用xtrabackup进行备份" class="headerlink" title="8、当时是否在使用xtrabackup进行备份"></a>8、当时是否在使用xtrabackup进行备份</h5><p>查询了备份系统，但是并没有任何的备份操作</p>
-<h5 id="9、检查os日志"><a href="#9、检查os日志" class="headerlink" title="9、检查os日志"></a>9、检查os日志</h5><p><img src="/uploads/15712984985975.jpg" alt="-w1230"><br>kernel: device eth0 entered promiscuous mode – 不知道这么会不会有影响<br>查看了很多os相关的内容，没有看出啥东西</p>
-<h4 id="进一步研究"><a href="#进一步研究" class="headerlink" title="进一步研究"></a>进一步研究</h4><p>打开内存相关的ps参数，后面统计下磁盘谁用了</p>
-<h4 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h4><p><a href="https://www.cnblogs.com/Security-Darren/p/4685629.html" target="_blank" rel="noopener">https://www.cnblogs.com/Security-Darren/p/4685629.html</a></p>
-
-          
+          背景描述mysql版本：5.7.21-21-log Percona Server (GPL), Release 21, Revision 2a37e4e业务数据量：890G
+问题分析1、业务有大写入通过查看监控信息已经解析binlog，发现当时写入量并不大
+2、当时是否切换binlog经过确认，并没
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/10/17/mysql机器的swap暴增，机器内存还有/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
