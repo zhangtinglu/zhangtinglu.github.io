@@ -3,7 +3,7 @@
   <entry>
     <title></title>
     <url>%2F2020%2F03%2F08%2F%E6%B5%8B%E8%AF%95%E6%B5%81%E7%A8%8B%E5%8D%9A%E5%AE%A2-md%2F</url>
-    <content type="text"><![CDATA[测试流程博客如使用CSDN的看官，请转至notion地址(推荐)或者github pages，以获取更好的阅读体验。 1、在notion中写博客，比如这篇测试博客 2、导出csv 3、写脚本处理文件，unzip以及转到hexo对应的_post目录下 4、使用mweb一键发布csdn 5、快捷命令发布到github pages]]></content>
+    <content type="text"><![CDATA[测试流程博客 title: 测试流程博客date: tags: test如使用CSDN的看官，请转至notion地址(推荐)或者github pages，以获取更好的阅读体验。 1、在notion中写博客，比如这篇测试博客 2、导出csv 3、写脚本处理文件，unzip以及转到hexo对应的_post目录下 4、使用mweb一键发布csdn 5、快捷命令发布到github pages]]></content>
   </entry>
   <entry>
     <title><![CDATA[prophet使用手册]]></title>
