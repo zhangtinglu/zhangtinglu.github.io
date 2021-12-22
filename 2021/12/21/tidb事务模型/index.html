@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|consolas:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhangtinglu.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="之前的看raft源码分析的时候，去看了看atomic.Value的实现，之后就一直想着Tidb的事务的实现，因为实现的思路比较类似的。Tidb的分布式事务模型是基于Google的Percolator实现的。接着我们从原理、代码实现、以及优化三大块来详细看看。 原理分布式事务模型要做什么？ 图片来源：blog地址 。3个事务并发写入，T1&#x2F;T2更新同一个分片的不同行。T1&#x2F;T3已不同的顺序更新相同的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="tidb事务模型">
+<meta property="og:url" content="https://zhangtinglu.github.io/2021/12/21/tidb%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="Moonshine&#39;s Blog">
+<meta property="og:description" content="之前的看raft源码分析的时候，去看了看atomic.Value的实现，之后就一直想着Tidb的事务的实现，因为实现的思路比较类似的。Tidb的分布式事务模型是基于Google的Percolator实现的。接着我们从原理、代码实现、以及优化三大块来详细看看。 原理分布式事务模型要做什么？ 图片来源：blog地址 。3个事务并发写入，T1&#x2F;T2更新同一个分片的不同行。T1&#x2F;T3已不同的顺序更新相同的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/13932735-a35b902f56e5582a?imageMogr2/auto-orient/strip%7CimageView2/2/w/761/format/webp">
+<meta property="og:image" content="https://s4.ax1x.com/2021/12/21/TKxBkj.png">
+<meta property="og:image" content="https://s4.ax1x.com/2021/12/21/TKzZNj.png">
+<meta property="og:image" content="https://s4.ax1x.com/2021/12/21/TMSiGR.png">
+<meta property="og:image" content="https://s4.ax1x.com/2021/12/21/TMpNX6.png">
+<meta property="og:image" content="https://s4.ax1x.com/2021/12/21/TMC9Ig.png">
+<meta property="article:published_time" content="2021-12-21T06:52:30.000Z">
+<meta property="article:modified_time" content="2021-12-21T10:42:43.748Z">
+<meta property="article:author" content="Moonshine">
+<meta property="article:tag" content="分布式事务">
+<meta property="article:tag" content="tidb">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/13932735-a35b902f56e5582a?imageMogr2/auto-orient/strip%7CimageView2/2/w/761/format/webp">
+
+<link rel="canonical" href="https://zhangtinglu.github.io/2021/12/21/tidb%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>tidb事务模型 | Moonshine's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Moonshine's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Moonshine's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">日拱一卒无有尽，功不唐捐终入海</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/archives/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhangtinglu.github.io/2021/12/21/tidb%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Moonshine">
+      <meta itemprop="description" content="風が吹いて葉が落ち、落ち葉は土壌の肥やしとなり土壌を肥えさせ、果物がゆっくりと着実に育つのです">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Moonshine's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          tidb事务模型
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-12-21 14:52:30 / 修改时间：18:42:43" itemprop="dateCreated datePublished" datetime="2021-12-21T14:52:30+08:00">2021-12-21</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>之前的看raft源码分析的时候，去看了看<code>atomic.Value</code>的实现，之后就一直想着Tidb的事务的实现，因为实现的思路比较类似的。Tidb的分布式事务模型是基于Google的Percolator实现的。接着我们从原理、代码实现、以及优化三大块来详细看看。</p>
+<h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><h5 id="分布式事务模型要做什么？"><a href="#分布式事务模型要做什么？" class="headerlink" title="分布式事务模型要做什么？"></a>分布式事务模型要做什么？</h5><p><img src="https://upload-images.jianshu.io/upload_images/13932735-a35b902f56e5582a?imageMogr2/auto-orient/strip%7CimageView2/2/w/761/format/webp" alt="img"></p>
+<p>图片来源：<a target="_blank" rel="noopener" href="https://www.jianshu.com/p/bca8a678fafc">blog地址</a> 。3个事务并发写入，T1/T2更新同一个分片的不同行。T1/T3已不同的顺序更新相同的行。</p>
+<h5 id="需要思考的问题有哪些？"><a href="#需要思考的问题有哪些？" class="headerlink" title="需要思考的问题有哪些？"></a>需要思考的问题有哪些？</h5><p>我们从事务的整个生命周期来详细考虑这个事情。</p>
+<p><strong>单事务</strong></p>
+<p>1、T1事务更新(a,b)两条记录，怎么知道记录在哪些分片上？</p>
+<p>2、T1事务同时更新了2个分片，怎么保证原子性，同时成功or失败？</p>
+<p>3、每一条记录又有3个副本，怎么保证多副本的同步？</p>
+<p><strong>并发事务</strong></p>
+<p>、T1/T2同时更新分片2，会不会有冲突？冲突检测怎么做？如果有冲突怎么办？  – 乐观事务 or  悲观事务</p>
+<p>5、T1/T3用不同的顺序更新相同的数据，会不会死锁？ – 死锁检测</p>
+<p>6、不同的隔离级别怎么实现？ – MVCC</p>
+<h5 id="基于Percolator的解决方案？"><a href="#基于Percolator的解决方案？" class="headerlink" title="基于Percolator的解决方案？"></a>基于Percolator的解决方案？</h5><p>先用<a target="_blank" rel="noopener" href="http://notes.stephenholiday.com/Percolator.pdf">论文</a>中的例子来简单说明下整个流程：Bob-&gt;Joe转账$7的整个过程。bal表示的是列。</p>
+<p>1、初始状态，Bob在时刻5有$10，Joe在时刻5有$2。时刻5-&gt;时刻6没有任何操作，所有6的时候还是data@5的数据，如最后一列。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TKxBkj"><img src="https://s4.ax1x.com/2021/12/21/TKxBkj.png" alt="TKxBkj.png"></a></p>
+<p>2、转账开始，Bob账号发生两个变化，时刻7先将Bob账户的lock字段(第3列)设置为primary，然后将data(第二列)进行更新，余额为$3。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TKzZNj"><img src="https://s4.ax1x.com/2021/12/21/TKzZNj.png" alt="TKzZNj.png"></a></p>
+<p>3、Bob账户更新完成，开始更新Joe账户，Joe账户操作同Bob(注意还是时刻7，开始时间)，却别是获取的lock不是primary了，而是ref to primary(第三列)。例子中secondary行只有一行，实际可能是多行，row by row的做获取锁&amp;更新数据的操作。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TMSiGR"><img src="https://s4.ax1x.com/2021/12/21/TMSiGR.png" alt="TMSiGR.png"></a></p>
+<p>4、接下来数据更新好了，进入到提交阶段。新的时刻8，将primary的锁信息删除，并将数据写入到bal:write列(第4列)，到这里事务就算是提交了。secondary行的提交是异步的。这个时候读Bob的账户看到的值就是$3。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TMpNX6"><img src="https://s4.ax1x.com/2021/12/21/TMpNX6.png" alt="TMpNX6.png"></a></p>
+<p>5、最后更新Bob账户信息，操作同步4，删除锁&amp;添加时刻8的信息。如果是多行需要更新，也是row by row的去更新。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TMC9Ig"><img src="https://s4.ax1x.com/2021/12/21/TMC9Ig.png" alt="TMC9Ig.png"></a></p>
+<p>看下事务相关的3列：</p>
+<p>c:lock : 锁信息，活跃事务。</p>
+<p>c:write ：提交事务。如果primary已经commit了，不管secondary有没有应用完，都是提交事务。</p>
+<p>c:data ： 存储的就是各个时刻的数据。</p>
+<p>接着我们来看看之前提出的问题怎么使用上面的模型一个个的解决掉。</p>
+<p>1、T1事务更新(a,b)两条记录，怎么知道记录在哪些分片上？</p>
+<p>​     从PD里面获取，这个不是事务提交的重点，后面可以研究下数据分布的策略。</p>
+<p>2、T1事务同时更新了2个分片，怎么保证原子性，同时成功or失败？</p>
+<p>​     2阶段提交，先prewrite，再commit，以primary:write作为事务提交的标准。</p>
+<blockquote>
+<p>🤔: 为啥不直接全部加锁，要这样麻烦的使用2阶段？</p>
+<p>​      如果直接加锁，那在整个提交过程中都不可用。row by row的提交&amp;释放能部分优化性能。</p>
+</blockquote>
+<blockquote>
+<p>🤔: 为啥要在prewrite阶段写数据，不在commit阶段写呢？</p>
+<p>​       以上面的情况为例，Joe账户在异步应用之前，版本7只有lock，没有data，必须得等到所有的行都异步的应用完了数据，才能给客户端返回，非常容易超时。</p>
+</blockquote>
+<blockquote>
+<p>🤔: 既然有2阶段，是不是马上想到了协调器？</p>
+<p>​      实际上percolator模型使用write列来弱化了这一点，在commit阶段并不需要通知所有row去commit，只需要完成primary row的更新即可。后面由异步的任务去实现。在prewrite阶段确实需要确保所有需要修改的行都顺利加锁并更新data。            </p>
+</blockquote>
+<blockquote>
+<p>🤔: 怎么获取ts？</p>
+<p>​      这里的时刻5、6、7是怎么去获取的，也就是原子钟。从PD去拿，那么很显然，并发高的时候这里就是瓶颈了。</p>
+</blockquote>
+<p> 3、每一条记录又有3个副本，怎么保证多副本的同步？</p>
+<p>​    TiDB使用Raft协议来在多数节点上同步数据，Raft协议的实现之前的blog已经分析了，详情请移步。</p>
+<p>4、T1/T2同时更新分片2，会不会有冲突？冲突检测怎么做？如果有冲突怎么办？ </p>
+<p>​    上面的流程中我们使用乐观锁来获取secondary锁，但是实际使用上冲突大的时候获取锁的概率低，这样很容易导致事务回滚。我们先来对比下乐观锁 VS 悲观锁</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>生活例子</th>
+<th>图例</th>
+<th>特征</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>乐观锁</td>
+<td>直接去餐厅去吃饭<br />1. 人多没地，在回来，白跑一趟<br />2. 人少有地直接吃了</td>
+<td>T1单事务<br />    a,b没有锁,可以直接加上<br />T1&amp;T2并发<br />    T1先来a,b上锁<br />    T2:b,e无法获取b的锁，回滚</td>
+<td>冲突少：性能高<br />冲突多：回滚代价大</td>
+</tr>
+<tr>
+<td>悲观锁</td>
+<td>1. 先打电话确认&amp;预定&amp;付定金<br />2. 去餐厅吃饭</td>
+<td>T1单事务<br />    即使a,b没有锁,也要先确认在开始事务<br />T1&amp;T2并发<br />    T1先确认，开始事务给a,b上锁<br />    T2先确认无法获取锁，不开始事务，不需要回滚</td>
+<td>冲突少：锁确认过程有消耗<br />冲突多：避免不必要的回滚</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>🤔 悲观锁的情况下，T1(update a,b)持有a,b行锁，此时T2(update b,c)和T3(update b,a)同时过来。显然都无法获取需要的行b的锁，接下来是T2持有c行锁，T3等；还是T2&amp;T3排队等？是尽量先持有能持有的行锁，还是等能持有所有行的锁？</p>
+</blockquote>
+<p>5、T1/T3用不同的顺序更新相同的数据，会不会死锁？ </p>
+<p>​      死锁检测</p>
+<p>6、不同的隔离级别怎么实现？</p>
+<p>​      MVCC，从上面的流程我们看到了，一行记录的修改是会保留多个版本的。以可重复度的情况为例说明。在进行读操作的时候，如果需要的行有lock信息，说明这一行正在被改，根据start_ts找到最近一个已经提交的版本(write列中去找)，然后去到对应的(data列获取到数据)。</p>
+<p>7、版本清理问题</p>
+<p>​    锁清理：primary_lock锁超时，回滚。secondary_lock，如果primary_lock已经提交，那就提交，否则就回滚。如果primary_lock还在，那就是超时，超时回滚即可。</p>
+<p>​    GC清理：比如没10min清理一次，本次清理的触发操作就将10min之前的数据干掉，原则上保留最近10min的数据。不过得合理考虑下清理带来的抖动。小批多次理论上比较好设定，尽量减少每次操作的动静。对drop table或者truncate table优化下大量连续删除。</p>
+<p>8、</p>
+<p>​    同一个server    </p>
+<p>​    不同的server</p>
+<p>Q：锁信息，对比mysql单节点，多节点每个节点都有自己的锁信息，T1跨节点了，怎么知道a、b行分别的锁信息</p>
+<p>Q：锁信息的统一管理，避免两阶段确认？</p>
+<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>原理图：先薅两张官网的图过来看看，乐观 VS 悲观</p>
+<h4 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h4><p><strong>参考文档</strong></p>
+<p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/bca8a678fafc">https://www.jianshu.com/p/bca8a678fafc</a></p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/349445778">https://zhuanlan.zhihu.com/p/349445778</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1ox411R7EA?spm_id_from=333.999.0.0">https://www.bilibili.com/video/BV1ox411R7EA?spm_id_from=333.999.0.0</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/" rel="tag"># 分布式事务</a>
+              <a href="/tags/tidb/" rel="tag"># tidb</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/12/20/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-4-leader%E9%80%BB%E8%BE%91/" rel="prev" title="hashicorp-raft源码系列-4-leader逻辑">
+      <i class="fa fa-chevron-left"></i> hashicorp-raft源码系列-4-leader逻辑
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/12/21/CockroachDB%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B/" rel="next" title="CockroachDB事务模型">
+      CockroachDB事务模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">原理</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B%E8%A6%81%E5%81%9A%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.1.</span> <span class="nav-text">分布式事务模型要做什么？</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%9C%80%E8%A6%81%E6%80%9D%E8%80%83%E7%9A%84%E9%97%AE%E9%A2%98%E6%9C%89%E5%93%AA%E4%BA%9B%EF%BC%9F"><span class="nav-number">1.2.</span> <span class="nav-text">需要思考的问题有哪些？</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8EPercolator%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%EF%BC%9F"><span class="nav-number">1.3.</span> <span class="nav-text">基于Percolator的解决方案？</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E5%8C%96"><span class="nav-number">3.</span> <span class="nav-text">优化</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Moonshine</p>
+  <div class="site-description" itemprop="description">風が吹いて葉が落ち、落ち葉は土壌の肥やしとなり土壌を肥えさせ、果物がゆっくりと着実に育つのです</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Moonshine</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
