@@ -1,9 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>读书笔记-Go Programming Language-ch13-Low-Level Programming</title>
+    <url>/2021/12/27/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0-Go-Programming-Language-ch13-Low-Level-Programming/</url>
+    <content><![CDATA[<h4 id="先看看屏幕调整好"><a href="#先看看屏幕调整好" class="headerlink" title="先看看屏幕调整好"></a>先看看屏幕调整好</h4><p><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211227164944846.png" alt="image-20211227164944846"></p>
+]]></content>
+      <tags>
+        <tag>读书笔记</tag>
+        <tag>Go Programming Language</tag>
+        <tag>ch13</tag>
+        <tag>Low-Level Programming</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>生活日记:初</title>
+    <url>/2021/12/26/%E7%94%9F%E6%B4%BB%E6%97%A5%E8%AE%B0-%E5%88%9D/</url>
+    <content><![CDATA[<h4 id="初"><a href="#初" class="headerlink" title="初"></a>初</h4><p>这个标题也是困扰我好久，先说说命名为初的原因。</p>
+<ol>
+<li>第一写生活类的博客</li>
+<li>开始🤔思考想过什么样的生活</li>
+</ol>
+<p>不知不觉已在北京工作4年多了，晚上散步前突然想到以后想要生活在哪里的话题。</p>
+<p>想要去昆明生活，觉得昆明春城，四季如春。</p>
+<p>接着就开始考虑，攒够多少钱可以去呢，毕竟工作机会不多。</p>
+<p>如果以后有小孩了，小孩教育怎么办呢。</p>
+<p>是不是还得买房呢，还有我对昆明也不熟悉吧。</p>
+<p>看~ 这就是典型的中国人，我想但我并不敢，需要我操心的事情是在太多了。</p>
+<p>我现在生活在北京，这座城市我已经生活了4年多了，可是我想也许并没有那么了解它。</p>
+<p>与其将时间花在不知未来会如何的思考上，不如现在就开始简单而笨拙的记录，记录北京这座城，记录我在这座城市呆过的痕迹，直到离开。</p>
+<p>清河站离我现在住的地方是真的近，所以就先从这里着手吧~</p>
+]]></content>
+      <tags>
+        <tag>生活</tag>
+        <tag>北京</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>基础知识恶补: bit vs byte</title>
     <url>/2021/12/24/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86%E6%81%B6%E8%A1%A5-bit-vs-byte/</url>
     <content><![CDATA[<p>出来混都是要还的，基础知识不牢靠</p>
+<p>bit： 0-1码</p>
+<p>byte：8个0-1码，这里就有一个疑问，<strong>为啥是8呢</strong>，和CPU有关系吗？一个字节是8位</p>
+<p>Go语言从 的 var a int</p>
+<p>1 编译器 -&gt;</p>
+<p>2 OS（32位/64位）</p>
+<p>3 CPU</p>
+<p>一个int为啥设计4个byte or 8byte</p>
 ]]></content>
       <tags>
         <tag>计算机基础</tag>
@@ -426,7 +468,7 @@
 <li><p>先看下函数调用关系</p>
 <p>newTCPTransport：就是tcp端口绑定，生成TCPStreamLayer(上面的类图中知道是NetworkTransport结构需要的成员)</p>
 <p>NewNetworkTransportWithConfig：创建NetworkTransport对象</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">   makeTransport</span><br><span class="line">   -&gt; NewTCPTransportWithConfig</span><br><span class="line">     -&gt; newTCPTransport <span class="comment">// 负责进行tcp端口绑定，生成TCPStreamLayer</span></span><br><span class="line">   		-&gt; NewNetworkTransportWithConfig <span class="comment">// 真正创建NetworkTransport对象</span></span><br><span class="line"></span><br><span class="line"><span class="number">2.</span> newTCPTransport</span><br><span class="line"></span><br><span class="line">   下面是newTCPTransport的实现，最后transportCreator就是网络层的创建器</span><br><span class="line"></span><br><span class="line">   <span class="string">``</span><span class="string">`go</span></span><br><span class="line"><span class="string">   // ① 调用net库绑定tcp监听端口</span></span><br><span class="line"><span class="string">   list, err := net.Listen(&quot;tcp&quot;, bindAddr)</span></span><br><span class="line"><span class="string">   // ② 将TCPListener -&gt; TCPStreamLayer(上面的类图中NetworkTransport需要实现StreamLayer接口)</span></span><br><span class="line"><span class="string">   stream := &amp;TCPStreamLayer&#123;</span></span><br><span class="line"><span class="string">   		advertise: advertise,</span></span><br><span class="line"><span class="string">   		listener:  list.(*net.TCPListener),</span></span><br><span class="line"><span class="string">   	&#125;</span></span><br><span class="line"><span class="string">   // ③ 将上面的 TCPStreamLayer-&gt; NetworkTransport，调用 NewNetworkTransportWithConfig</span></span><br><span class="line"><span class="string">   trans := transportCreator(stream)</span></span><br></pre></td></tr></table></figure></li>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">   makeTransport</span><br><span class="line">   -&gt; NewTCPTransportWithConfig</span><br><span class="line">     -&gt; newTCPTransport <span class="comment">// 负责进行tcp端口绑定，生成TCPStreamLayer，包装器</span></span><br><span class="line">   		-&gt; NewNetworkTransportWithConfig <span class="comment">// 真正创建NetworkTransport对象</span></span><br><span class="line"></span><br><span class="line"><span class="number">2.</span> newTCPTransport</span><br><span class="line"></span><br><span class="line">   下面是newTCPTransport的实现，最后transportCreator就是网络层的创建器</span><br><span class="line"></span><br><span class="line">   <span class="string">``</span><span class="string">`go</span></span><br><span class="line"><span class="string">   // ① 调用net库绑定tcp监听端口</span></span><br><span class="line"><span class="string">   list, err := net.Listen(&quot;tcp&quot;, bindAddr)</span></span><br><span class="line"><span class="string">   // ② 将TCPListener -&gt; TCPStreamLayer(上面的类图中NetworkTransport需要实现StreamLayer接口)</span></span><br><span class="line"><span class="string">   stream := &amp;TCPStreamLayer&#123;</span></span><br><span class="line"><span class="string">   		advertise: advertise,</span></span><br><span class="line"><span class="string">   		listener:  list.(*net.TCPListener),</span></span><br><span class="line"><span class="string">   &#125;</span></span><br><span class="line"><span class="string">   // ③ 将上面的 TCPStreamLayer-&gt; NetworkTransport，调用 NewNetworkTransportWithConfig</span></span><br><span class="line"><span class="string">   trans := transportCreator(stream)</span></span><br></pre></td></tr></table></figure></li>
 <li><p>newNetworkTransport</p>
 <p>下面是创建网络层的代码，一个Acceptor专门用来accetor连接，每个新的连接都会创建一个协程进行处理。</p>
 <p><a href="https://imgtu.com/i/T9BOV1"><img src="https://s4.ax1x.com/2021/12/16/T9BOV1.png" alt="T9BOV1.png"></a></p>
