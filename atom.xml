@@ -6,7 +6,7 @@
   <link href="https://zhangtinglu.github.io/atom.xml" rel="self"/>
   
   <link href="https://zhangtinglu.github.io/"/>
-  <updated>2021-12-27T08:50:07.308Z</updated>
+  <updated>2021-12-29T04:02:50.047Z</updated>
   <id>https://zhangtinglu.github.io/</id>
   
   <author>
@@ -17,30 +17,40 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>读书笔记-Go Programming Language-ch13-Low-Level Programming</title>
-    <link href="https://zhangtinglu.github.io/2021/12/27/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0-Go-Programming-Language-ch13-Low-Level-Programming/"/>
-    <id>https://zhangtinglu.github.io/2021/12/27/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0-Go-Programming-Language-ch13-Low-Level-Programming/</id>
-    <published>2021-12-27T08:36:44.000Z</published>
-    <updated>2021-12-27T08:50:07.308Z</updated>
+    <title>本地调试proxysql</title>
+    <link href="https://zhangtinglu.github.io/2021/12/29/%E6%9C%AC%E5%9C%B0%E8%B0%83%E8%AF%95proxysql/"/>
+    <id>https://zhangtinglu.github.io/2021/12/29/%E6%9C%AC%E5%9C%B0%E8%B0%83%E8%AF%95proxysql/</id>
+    <published>2021-12-29T04:02:32.000Z</published>
+    <updated>2021-12-29T04:02:50.047Z</updated>
     
-    <content type="html"><![CDATA[<h4 id="先看看屏幕调整好"><a href="#先看看屏幕调整好" class="headerlink" title="先看看屏幕调整好"></a>先看看屏幕调整好</h4><p><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211227164944846.png" alt="image-20211227164944846"></p>]]></content>
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>数据归档详细设计与实现</title>
+    <link href="https://zhangtinglu.github.io/2021/12/28/%E6%95%B0%E6%8D%AE%E5%BD%92%E6%A1%A3-%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/"/>
+    <id>https://zhangtinglu.github.io/2021/12/28/%E6%95%B0%E6%8D%AE%E5%BD%92%E6%A1%A3-%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/</id>
+    <published>2021-12-28T02:19:27.000Z</published>
+    <updated>2021-12-28T03:02:10.823Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="查询能力"><a href="#查询能力" class="headerlink" title="查询能力"></a>查询能力</h4><p>实现的效果</p><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211228110147046.png" alt="image-20211228110147046" style="zoom:100%;float:left" /><p>人工指定</p><p>当前select的流程</p><p>加入路由能力后的select流程</p><p>是否需要保留用户指定的这个能力</p><p>是否需要支持多个字段归档 – 或者活后期可以扩展</p><p>分库分表</p><p>归档的规则存储在哪里</p>]]></content>
     
     
       
       
-    <summary type="html">&lt;h4 id=&quot;先看看屏幕调整好&quot;&gt;&lt;a href=&quot;#先看看屏幕调整好&quot; class=&quot;headerlink&quot; title=&quot;先看看屏幕调整好&quot;&gt;&lt;/a&gt;先看看屏幕调整好&lt;/h4&gt;&lt;p&gt;&lt;img src=&quot;https://gitee.com/zhangtinglu/blog_p</summary>
+    <summary type="html">&lt;h4 id=&quot;查询能力&quot;&gt;&lt;a href=&quot;#查询能力&quot; class=&quot;headerlink&quot; title=&quot;查询能力&quot;&gt;&lt;/a&gt;查询能力&lt;/h4&gt;&lt;p&gt;实现的效果&lt;/p&gt;
+&lt;img src=&quot;https://gitee.com/zhangtinglu/blog_pic/raw</summary>
       
     
     
     
     
-    <category term="读书笔记" scheme="https://zhangtinglu.github.io/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"/>
+    <category term="数据归档" scheme="https://zhangtinglu.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BD%92%E6%A1%A3/"/>
     
-    <category term="Go Programming Language" scheme="https://zhangtinglu.github.io/tags/Go-Programming-Language/"/>
-    
-    <category term="ch13" scheme="https://zhangtinglu.github.io/tags/ch13/"/>
-    
-    <category term="Low-Level Programming" scheme="https://zhangtinglu.github.io/tags/Low-Level-Programming/"/>
+    <category term="方案设计" scheme="https://zhangtinglu.github.io/tags/%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1/"/>
     
   </entry>
   
@@ -72,11 +82,11 @@
   </entry>
   
   <entry>
-    <title>基础知识恶补: bit vs byte</title>
-    <link href="https://zhangtinglu.github.io/2021/12/24/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86%E6%81%B6%E8%A1%A5-bit-vs-byte/"/>
-    <id>https://zhangtinglu.github.io/2021/12/24/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86%E6%81%B6%E8%A1%A5-bit-vs-byte/</id>
+    <title>基础知识: bit vs byte</title>
+    <link href="https://zhangtinglu.github.io/2021/12/24/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86-bit-vs-byte/"/>
+    <id>https://zhangtinglu.github.io/2021/12/24/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86-bit-vs-byte/</id>
     <published>2021-12-24T10:36:00.000Z</published>
-    <updated>2021-12-25T01:11:52.453Z</updated>
+    <updated>2021-12-29T04:06:39.037Z</updated>
     
     <content type="html"><![CDATA[<p>出来混都是要还的，基础知识不牢靠</p><p>bit： 0-1码</p><p>byte：8个0-1码，这里就有一个疑问，<strong>为啥是8呢</strong>，和CPU有关系吗？一个字节是8位</p><p>Go语言从 的 var a int</p><p>1 编译器 -&gt;</p><p>2 OS（32位/64位）</p><p>3 CPU</p><p>一个int为啥设计4个byte or 8byte</p>]]></content>
     
@@ -102,42 +112,11 @@
   </entry>
   
   <entry>
-    <title>读go 编程语言中英文吐槽记录</title>
-    <link href="https://zhangtinglu.github.io/2021/12/24/%E8%AF%BBgo-%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E4%B8%AD%E8%8B%B1%E6%96%87%E5%90%90%E6%A7%BD%E8%AE%B0%E5%BD%95/"/>
-    <id>https://zhangtinglu.github.io/2021/12/24/%E8%AF%BBgo-%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E4%B8%AD%E8%8B%B1%E6%96%87%E5%90%90%E6%A7%BD%E8%AE%B0%E5%BD%95/</id>
-    <published>2021-12-24T10:32:17.000Z</published>
-    <updated>2021-12-26T01:49:26.286Z</updated>
-    
-    <content type="html"><![CDATA[<p>PDF github地址</p><p>心理学 VS 计算机：读书方法</p><p>compute 最好是4~5个屏幕</p>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;p&gt;PDF github地址&lt;/p&gt;
-&lt;p&gt;心理学 VS 计算机：读书方法&lt;/p&gt;
-&lt;p&gt;compute 最好是4~5个屏幕&lt;/p&gt;
-</summary>
-      
-    
-    
-    
-    
-    <category term="中文名" scheme="https://zhangtinglu.github.io/tags/%E4%B8%AD%E6%96%87%E5%90%8D/"/>
-    
-    <category term="英文名" scheme="https://zhangtinglu.github.io/tags/%E8%8B%B1%E6%96%87%E5%90%8D/"/>
-    
-    <category term="读书记录" scheme="https://zhangtinglu.github.io/tags/%E8%AF%BB%E4%B9%A6%E8%AE%B0%E5%BD%95/"/>
-    
-    <category term="翻译吐槽" scheme="https://zhangtinglu.github.io/tags/%E7%BF%BB%E8%AF%91%E5%90%90%E6%A7%BD/"/>
-    
-  </entry>
-  
-  <entry>
     <title>Typora写blog中粘贴图片自动上传图床</title>
-    <link href="https://zhangtinglu.github.io/2021/12/24/Typora%E5%86%99blog%E4%B8%AD%E7%B2%98%E8%B4%B4%E5%9B%BE%E7%89%87%E8%87%AA%E5%8A%A8%E4%B8%8A%E4%BC%A0%E5%9B%BE%E5%BA%8A/"/>
-    <id>https://zhangtinglu.github.io/2021/12/24/Typora%E5%86%99blog%E4%B8%AD%E7%B2%98%E8%B4%B4%E5%9B%BE%E7%89%87%E8%87%AA%E5%8A%A8%E4%B8%8A%E4%BC%A0%E5%9B%BE%E5%BA%8A/</id>
+    <link href="https://zhangtinglu.github.io/2021/12/24/blog%E5%9B%BE%E5%BA%8A%E7%AF%87/"/>
+    <id>https://zhangtinglu.github.io/2021/12/24/blog%E5%9B%BE%E5%BA%8A%E7%AF%87/</id>
     <published>2021-12-24T10:31:20.000Z</published>
-    <updated>2021-12-25T01:04:40.247Z</updated>
+    <updated>2021-12-25T01:04:46.710Z</updated>
     
     <content type="html"><![CDATA[<h4 id="Goal"><a href="#Goal" class="headerlink" title="Goal"></a>Goal</h4><p>我电脑上 cmd + trl + a(微信截图) -&gt; 来到Typora(cmd + v) 粘贴。</p><p>然后就自动帮我上传图床，并且替换成图床照片吧，这样我也不需要切换到图床上去捣鼓了，就专注在Typora上去打字。</p><h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>图床：<a href="https://blog.svend.cc/upic/tutorials/github/">github</a>、<a href="https://blog.svend.cc/upic/tutorials/gitee/">gitee</a>，我自己比较常用的是路过图床，但是uPic不会配置，那就算啦，佛系找个能成功的。</p><blockquote><p>采坑：github图片可以正常上传，但是展示出来</p></blockquote><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225084632762.png" alt="image-20211225084632762" style="zoom:30%;float:left" /><p>因此，我们还好折腾Gitee配置。</p><ol><li><p>创建仓库</p><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225085435762.png" alt="image-20211225085435762" style="zoom:25%;float:left" /><ol start="2"><li>生成私人令牌</li></ol><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225083650340.png" alt="image-20211225083650340" style="zoom:25%;float:left" /><ol start="3"><li><p>配置uPic</p><p>uPic直接github上下载了安装好，然后按照下面的方法配置</p><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090108133.png" alt="image-20211225090108133" style="zoom:25%;float:left" /></li><li><p>配置Typora</p><p>cmd+,打开软件偏好设置,成功了之后就在写blog的时候直接截图+粘贴吧，巴斯的很~</p><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090323825.png" alt="image-20211225090323825" style="zoom:25%;float:left" /></li></ol></li></ol>]]></content>
     
@@ -195,8 +174,8 @@
   
   <entry>
     <title>CockroachDB事务模型</title>
-    <link href="https://zhangtinglu.github.io/2021/12/21/CockroachDB%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B/"/>
-    <id>https://zhangtinglu.github.io/2021/12/21/CockroachDB%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B/</id>
+    <link href="https://zhangtinglu.github.io/2021/12/21/%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B-CockroachDB/"/>
+    <id>https://zhangtinglu.github.io/2021/12/21/%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B-CockroachDB/</id>
     <published>2021-12-21T06:53:06.000Z</published>
     <updated>2021-12-21T07:35:42.874Z</updated>
     
@@ -220,10 +199,10 @@
   
   <entry>
     <title>tidb事务模型</title>
-    <link href="https://zhangtinglu.github.io/2021/12/21/tidb%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B/"/>
-    <id>https://zhangtinglu.github.io/2021/12/21/tidb%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B/</id>
+    <link href="https://zhangtinglu.github.io/2021/12/21/%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B-TiDB/"/>
+    <id>https://zhangtinglu.github.io/2021/12/21/%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B-TiDB/</id>
     <published>2021-12-21T06:52:30.000Z</published>
-    <updated>2021-12-23T05:37:58.459Z</updated>
+    <updated>2021-12-23T10:28:32.393Z</updated>
     
     <content type="html"><![CDATA[<p>之前的看raft源码分析的时候，去看了看<code>atomic.Value</code>的实现，之后就一直想着Tidb的事务的实现，因为实现的思路比较类似的。Tidb的分布式事务模型是基于Google的Percolator实现的。接着我们从原理、代码实现、以及优化三大块来详细看看。</p><h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><h5 id="分布式事务模型要做什么？"><a href="#分布式事务模型要做什么？" class="headerlink" title="分布式事务模型要做什么？"></a>分布式事务模型要做什么？</h5><p><a href="https://imgtu.com/i/T8tPBj"><img src="https://s4.ax1x.com/2021/12/23/T8tPBj.md.png" alt="T8tPBj.md.png"></a></p><p>图片来源：<a href="https://www.jianshu.com/p/bca8a678fafc">blog地址</a>  [如有问题，请联系删除]。3个事务并发写入，T1/T2更新同一个分片的相同行(b)。T1/T3以不同的顺序更新相同的行。</p><h5 id="需要思考的问题有哪些？"><a href="#需要思考的问题有哪些？" class="headerlink" title="需要思考的问题有哪些？"></a>需要思考的问题有哪些？</h5><p>我们从事务的整个生命周期来详细考虑这个事情。</p><p><strong>单事务</strong></p><p>1、T1事务更新(a,b)两条记录，怎么知道记录在哪些分片上？</p><p>2、T1事务同时更新了2个分片，怎么保证原子性，同时成功or失败？</p><p>3、每一条记录又有3个副本，怎么保证多副本的同步？</p><p><strong>并发事务</strong></p><p>、T1/T2同时更新分片2，会不会有冲突？冲突检测怎么做？如果有冲突怎么办？  – 乐观事务 or  悲观事务</p><p>5、T1/T3用不同的顺序更新相同的数据，会不会死锁？ – 死锁检测</p><p>6、不同的隔离级别怎么实现？ – MVCC</p><h5 id="基于Percolator的解决方案？"><a href="#基于Percolator的解决方案？" class="headerlink" title="基于Percolator的解决方案？"></a>基于Percolator的解决方案？</h5><p>先用<a href="http://notes.stephenholiday.com/Percolator.pdf">论文</a>中的例子来简单说明下整个流程：Bob-&gt;Joe转账$7的整个过程。bal表示的是列。</p><p>1、初始状态，Bob在时刻5有$10，Joe在时刻5有$2。时刻5-&gt;时刻6没有任何操作，所有6的时候还是data@5的数据，如最后一列。</p><p><a href="https://imgtu.com/i/TKxBkj"><img src="https://s4.ax1x.com/2021/12/21/TKxBkj.png" alt="TKxBkj.png"></a></p><p>2、转账开始，Bob账号发生两个变化，时刻7先将Bob账户的lock字段(第3列)设置为primary，然后将data(第二列)进行更新，余额为$3。</p><p><a href="https://imgtu.com/i/TKzZNj"><img src="https://s4.ax1x.com/2021/12/21/TKzZNj.png" alt="TKzZNj.png"></a></p><p>3、Bob账户更新完成，开始更新Joe账户，Joe账户操作同Bob(注意还是时刻7，开始时间)，却别是获取的lock不是primary了，而是ref to primary(第三列)。例子中secondary行只有一行，实际可能是多行，row by row的做获取锁&amp;更新数据的操作。</p><p><a href="https://imgtu.com/i/TMSiGR"><img src="https://s4.ax1x.com/2021/12/21/TMSiGR.png" alt="TMSiGR.png"></a></p><p>4、接下来数据更新好了，进入到提交阶段。新的时刻8，将primary的锁信息删除，并将数据写入到bal:write列(第4列)，到这里事务就算是提交了。secondary行的提交是异步的。这个时候读Bob的账户看到的值就是$3。</p><p><a href="https://imgtu.com/i/TMpNX6"><img src="https://s4.ax1x.com/2021/12/21/TMpNX6.png" alt="TMpNX6.png"></a></p><p>5、最后更新Bob账户信息，操作同步4，删除锁&amp;添加时刻8的信息。如果是多行需要更新，也是row by row的去更新。</p><p><a href="https://imgtu.com/i/TMC9Ig"><img src="https://s4.ax1x.com/2021/12/21/TMC9Ig.png" alt="TMC9Ig.png"></a></p><p>看下事务相关的3列：</p><p>c:lock : 锁信息，活跃事务。</p><p>c:write ：提交事务。如果primary已经commit了，不管secondary有没有应用完，都是提交事务。</p><p>c:data ： 存储的就是各个时刻的数据。</p><p>接着我们来看看之前提出的问题怎么使用上面的模型一个个的解决掉。</p><p>1、T1事务更新(a,b)两条记录，怎么知道记录在哪些分片上？</p><p>​     从PD里面获取，这个不是事务提交的重点，后面可以研究下数据分布的策略。</p><p>2、T1事务同时更新了2个分片，怎么保证原子性，同时成功or失败？</p><p>​     2阶段提交，先prewrite，再commit，以primary:write作为事务提交的标准。</p><blockquote><p>🤔: 为啥不直接全部加锁，要这样麻烦的使用2阶段？</p><p>​      如果直接加锁，那在整个提交过程中都不可用。row by row的提交&amp;释放能部分优化性能。</p></blockquote><blockquote><p>🤔: 为啥要在prewrite阶段写数据，不在commit阶段写呢？</p><p>​       以上面的情况为例，Joe账户在异步应用之前，版本7只有lock，没有data，必须得等到所有的行都异步的应用完了数据，才能给客户端返回，非常容易超时。</p></blockquote><blockquote><p>🤔: 既然有2阶段，是不是马上想到了协调器？</p><p>​      实际上percolator模型使用write列来弱化了这一点，在commit阶段并不需要通知所有row去commit，只需要完成primary row的更新即可。后面由异步的任务去实现。在prewrite阶段确实需要确保所有需要修改的行都顺利加锁并更新data。            </p></blockquote><blockquote><p>🤔: 怎么获取ts？</p><p>​      这里的时刻5、6、7是怎么去获取的，也就是原子钟。从PD去拿，那么很显然，并发高的时候这里就是瓶颈了。</p></blockquote><p> 3、每一条记录又有3个副本，怎么保证多副本的同步？</p><p>​    TiDB使用Raft协议来在多数节点上同步数据，Raft协议的实现之前的blog已经分析了，详情请移步。</p><p>4、T1/T2同时更新分片2，会不会有冲突？冲突检测怎么做？如果有冲突怎么办？ </p><p>​    上面的流程中我们使用乐观锁来获取secondary锁，但是实际使用上冲突大的时候获取锁的概率低，这样很容易导致事务回滚。我们先来对比下乐观锁 VS 悲观锁</p><table><thead><tr><th>类型</th><th>生活例子</th><th>图例</th><th>特征</th></tr></thead><tbody><tr><td>乐观锁</td><td>直接去餐厅去吃饭<br />1. 人多没地，在回来，白跑一趟<br />2. 人少有地直接吃了</td><td>T1单事务<br />    a,b没有锁,可以直接加上<br />T1&amp;T2并发<br />    T1先来a,b上锁<br />    T2:b,e无法获取b的锁，回滚</td><td>冲突少：性能高<br />冲突多：回滚代价大</td></tr><tr><td>悲观锁</td><td>1. 先打电话确认&amp;预定&amp;付定金<br />2. 去餐厅吃饭</td><td>T1单事务<br />    即使a,b没有锁,也要先确认在开始事务<br />T1&amp;T2并发<br />    T1先确认，开始事务给a,b上锁<br />    T2先确认无法获取锁，不开始事务，不需要回滚</td><td>冲突少：锁确认过程有消耗<br />冲突多：避免不必要的回滚</td></tr></tbody></table><blockquote><p>🤔 悲观锁的情况下，T1(update a,b)持有a,b行锁，此时T2(update b,c)和T3(update b,a)同时过来。显然都无法获取需要的行b的锁，接下来是T2持有c行锁，T3等；还是T2&amp;T3排队等？是尽量先持有能持有的行锁，还是等能持有所有行的锁？</p></blockquote><p>5、T1/T3用不同的顺序更新相同的数据，会不会死锁？ </p><p>​      死锁检测</p><p>6、不同的隔离级别怎么实现？</p><p>​      MVCC，从上面的流程我们看到了，一行记录的修改是会保留多个版本的。以可重复度的情况为例说明。在进行读操作的时候，如果需要的行有lock信息，说明这一行正在被改，根据start_ts找到最近一个已经提交的版本(write列中去找)，然后去到对应的(data列获取到数据)。</p><p>7、版本清理问题</p><p>​    锁清理：primary_lock锁超时，回滚。secondary_lock，如果primary_lock已经提交，那就提交，否则就回滚。如果primary_lock还在，那就是超时，超时回滚即可。</p><p>​    GC清理：比如没10min清理一次，本次清理的触发操作就将10min之前的数据干掉，原则上保留最近10min的数据。不过得合理考虑下清理带来的抖动。小批多次理论上比较好设定，尽量减少每次操作的动静。对drop table或者truncate table优化下大量连续删除。</p><p>8、</p><p>​    同一个server    </p><p>​    不同的server</p><p>Q：锁信息，对比mysql单节点，多节点每个节点都有自己的锁信息，T1跨节点了，怎么知道a、b行分别的锁信息</p><p>Q：锁信息的统一管理，避免两阶段确认？</p><h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>原理图：先薅两张官网的图过来看看，乐观 VS 悲观</p><p>Parser -&gt; Optimize -&gt; Executor</p><p>Server/conn.go(Run) -&gt;  dispatch -&gt; handleQuery(Parse -&gt; )</p><p>session -&gt; Compiler (Compile compiles an ast.StmtNode to a physical plan.) </p><p>ExecuteStmt – 这里涉及到事务相关的内容了</p><h4 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h4><p><strong>参考文档</strong></p><p><a href="https://www.jianshu.com/p/bca8a678fafc">https://www.jianshu.com/p/bca8a678fafc</a></p><p><a href="https://zhuanlan.zhihu.com/p/349445778">https://zhuanlan.zhihu.com/p/349445778</a></p><p><a href="https://www.bilibili.com/video/BV1ox411R7EA?spm_id_from=333.999.0.0">https://www.bilibili.com/video/BV1ox411R7EA?spm_id_from=333.999.0.0</a></p>]]></content>
     
@@ -266,29 +245,6 @@
   </entry>
   
   <entry>
-    <title>blog折腾记录</title>
-    <link href="https://zhangtinglu.github.io/2021/12/17/blog%E6%8A%98%E8%85%BE%E8%AE%B0%E5%BD%95/"/>
-    <id>https://zhangtinglu.github.io/2021/12/17/blog%E6%8A%98%E8%85%BE%E8%AE%B0%E5%BD%95/</id>
-    <published>2021-12-17T08:18:49.000Z</published>
-    <updated>2021-12-17T10:43:03.549Z</updated>
-    
-    <content type="html"><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>最近开始重拾写blog的习惯，想着坚持点啥吧。</p><p>结果将github上的网站打开，2020-03最近一篇，现在可是2021-12月了，搁置了1年9个月，真行。</p><p>然后打算上传一篇blog，发现新电脑上环境也没有了。大脑开始告诉运转，好吧~ 完全没有一点映像。</p><p>因此，打算乖乖的写文章记录，好记性不如烂笔头，先人们不曾欺我啊~</p><h4 id="操作记录"><a href="#操作记录" class="headerlink" title="操作记录"></a>操作记录</h4><p>之前还折腾什么mweb，一键部署多个平台啥的。现在可能是思想观念变了，内容平台还是以内容为主。既然都花了那么多心思写了，难道还不能去各个平台溜达一圈部署下。</p><h5 id="用什么写？"><a href="#用什么写？" class="headerlink" title="用什么写？"></a>用什么写？</h5><blockquote><p>Typero</p></blockquote><h5 id="用什么图床？"><a href="#用什么图床？" class="headerlink" title="用什么图床？"></a>用什么图床？</h5><blockquote><p> 路过图床。就是觉得剪贴板直接ctrl+v很方便，懒得换。</p></blockquote><h5 id="发布到哪"><a href="#发布到哪" class="headerlink" title="发布到哪"></a>发布到哪</h5><p>原则就是支持MD导入</p><ul><li>github，可以去百度智能云上去申请一个域名，便宜的一年就13元，不过续费比较贵☺️。</li><li>csdn</li><li>cnblog(不支持MD导入，有点愁人)</li><li>简书(不支持MD导入，放弃)</li></ul><h5 id="hexo与github配置"><a href="#hexo与github配置" class="headerlink" title="hexo与github配置"></a>hexo与github配置</h5><p>说起来我之前弄过一版，但是完成忘记了。更惨的是git仓库的东西都不知道怎么复用，只能完全重来，就当是一个新的开始好了。</p><p>先将一次性的操作做了，安装&amp;配置。配置文件只有2个，一定要做好备份</p><p>_config.yml: 网站配置</p><p>themes/next/_config.yml：主题配置</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> mac上安装hexo</span></span><br><span class="line">brew install hexo</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 初始化项目</span></span><br><span class="line">hexo init myblog</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> git <span class="built_in">clone</span> next主题</span></span><br><span class="line">git clone https://github.com/theme-next/hexo-theme-next themes/next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制化配置 _config.yml</span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># site： 这力的language要和主题里面的themes/next/languages下面的文件能对应才行</span></span></span><br><span class="line">title: Moonshine&#x27;s Blog</span><br><span class="line">subtitle: &#x27;日拱一卒无有尽，功不唐捐终入海&#x27;</span><br><span class="line">description: &#x27;風が吹いて葉が落ち、落ち葉は土壌の肥やしとなり土壌を肥えさせ、果物がゆっくりと着実に育つのです&#x27;</span><br><span class="line">keywords: &#x27;数据库&#x27;</span><br><span class="line">author: Moonshine</span><br><span class="line">language: zh-CN</span><br><span class="line">timezone: &#x27;&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># url</span></span></span><br><span class="line">url: https://zhangtinglu.github.io/</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 主题</span></span></span><br><span class="line">theme: next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 部署git</span></span></span><br><span class="line">deploy:</span><br><span class="line">  type: &#x27;git&#x27;</span><br><span class="line">  repo: &#x27;https://github.com/zhangtinglu/zhangtinglu.github.io&#x27;</span><br><span class="line">  branch: &#x27;master&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 代码语法高亮，将prismjs改成true就行了</span></span></span><br><span class="line">prismjs:</span><br><span class="line">  enable: true </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制theme配置 themes/next/_config.yml -- 有点多，直接备份吧</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 把自己需要的需要的page安装下</span></span><br><span class="line">hexo new page about</span><br><span class="line">hexo new page tags</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 首页摘要 -- 太费劲了，直接用归档页面当成主页</span></span><br><span class="line">~/myblog/themes/next/layout </span><br><span class="line">mv index.swig index_bak.swig</span><br><span class="line">cp archive.swig index.swig</span><br><span class="line"><span class="meta">#</span><span class="bash"> 代码可折叠 - 收缩</span></span><br><span class="line">codeblock:</span><br><span class="line">  highlight_theme: night</span><br><span class="line"><span class="meta">#</span><span class="bash"> 显得太大了 -- 不管能看就行</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 文章目录</span></span><br><span class="line">toc:</span><br><span class="line">  expand_all: true</span><br></pre></td></tr></table></figure><p>接着就是平常使用了，创建blog-deploy</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先将hello world这个page删除</span></span><br><span class="line">rm -rf /source/_posts/hello-world.md</span><br><span class="line">hexo new &#x27;blog&#x27;</span><br><span class="line">hexo s</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure><h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>真的前端做到最后，觉得会疯，太容易产生强迫症了。</p>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;h4 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h4&gt;&lt;p&gt;最近开始重拾写blog的习惯，想着坚持点啥吧。&lt;/p&gt;
-&lt;p&gt;结果将github上的网站打开，2020-03最近一篇，现在可是2021-12</summary>
-      
-    
-    
-    
-    
-    <category term="hexo配置" scheme="https://zhangtinglu.github.io/tags/hexo%E9%85%8D%E7%BD%AE/"/>
-    
-  </entry>
-  
-  <entry>
     <title>hashicorp:raft源码系列(3)--存储层</title>
     <link href="https://zhangtinglu.github.io/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-3-%E5%AD%98%E5%82%A8%E5%B1%82/"/>
     <id>https://zhangtinglu.github.io/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-3-%E5%AD%98%E5%82%A8%E5%B1%82/</id>
@@ -307,6 +263,29 @@
     
     
     <category term="raft" scheme="https://zhangtinglu.github.io/tags/raft/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>blog折腾记录</title>
+    <link href="https://zhangtinglu.github.io/2021/12/17/blog%E9%83%A8%E7%BD%B2%E7%AF%87/"/>
+    <id>https://zhangtinglu.github.io/2021/12/17/blog%E9%83%A8%E7%BD%B2%E7%AF%87/</id>
+    <published>2021-12-17T08:18:49.000Z</published>
+    <updated>2021-12-17T10:43:03.549Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>最近开始重拾写blog的习惯，想着坚持点啥吧。</p><p>结果将github上的网站打开，2020-03最近一篇，现在可是2021-12月了，搁置了1年9个月，真行。</p><p>然后打算上传一篇blog，发现新电脑上环境也没有了。大脑开始告诉运转，好吧~ 完全没有一点映像。</p><p>因此，打算乖乖的写文章记录，好记性不如烂笔头，先人们不曾欺我啊~</p><h4 id="操作记录"><a href="#操作记录" class="headerlink" title="操作记录"></a>操作记录</h4><p>之前还折腾什么mweb，一键部署多个平台啥的。现在可能是思想观念变了，内容平台还是以内容为主。既然都花了那么多心思写了，难道还不能去各个平台溜达一圈部署下。</p><h5 id="用什么写？"><a href="#用什么写？" class="headerlink" title="用什么写？"></a>用什么写？</h5><blockquote><p>Typero</p></blockquote><h5 id="用什么图床？"><a href="#用什么图床？" class="headerlink" title="用什么图床？"></a>用什么图床？</h5><blockquote><p> 路过图床。就是觉得剪贴板直接ctrl+v很方便，懒得换。</p></blockquote><h5 id="发布到哪"><a href="#发布到哪" class="headerlink" title="发布到哪"></a>发布到哪</h5><p>原则就是支持MD导入</p><ul><li>github，可以去百度智能云上去申请一个域名，便宜的一年就13元，不过续费比较贵☺️。</li><li>csdn</li><li>cnblog(不支持MD导入，有点愁人)</li><li>简书(不支持MD导入，放弃)</li></ul><h5 id="hexo与github配置"><a href="#hexo与github配置" class="headerlink" title="hexo与github配置"></a>hexo与github配置</h5><p>说起来我之前弄过一版，但是完成忘记了。更惨的是git仓库的东西都不知道怎么复用，只能完全重来，就当是一个新的开始好了。</p><p>先将一次性的操作做了，安装&amp;配置。配置文件只有2个，一定要做好备份</p><p>_config.yml: 网站配置</p><p>themes/next/_config.yml：主题配置</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> mac上安装hexo</span></span><br><span class="line">brew install hexo</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 初始化项目</span></span><br><span class="line">hexo init myblog</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> git <span class="built_in">clone</span> next主题</span></span><br><span class="line">git clone https://github.com/theme-next/hexo-theme-next themes/next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制化配置 _config.yml</span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># site： 这力的language要和主题里面的themes/next/languages下面的文件能对应才行</span></span></span><br><span class="line">title: Moonshine&#x27;s Blog</span><br><span class="line">subtitle: &#x27;日拱一卒无有尽，功不唐捐终入海&#x27;</span><br><span class="line">description: &#x27;風が吹いて葉が落ち、落ち葉は土壌の肥やしとなり土壌を肥えさせ、果物がゆっくりと着実に育つのです&#x27;</span><br><span class="line">keywords: &#x27;数据库&#x27;</span><br><span class="line">author: Moonshine</span><br><span class="line">language: zh-CN</span><br><span class="line">timezone: &#x27;&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># url</span></span></span><br><span class="line">url: https://zhangtinglu.github.io/</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 主题</span></span></span><br><span class="line">theme: next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 部署git</span></span></span><br><span class="line">deploy:</span><br><span class="line">  type: &#x27;git&#x27;</span><br><span class="line">  repo: &#x27;https://github.com/zhangtinglu/zhangtinglu.github.io&#x27;</span><br><span class="line">  branch: &#x27;master&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 代码语法高亮，将prismjs改成true就行了</span></span></span><br><span class="line">prismjs:</span><br><span class="line">  enable: true </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制theme配置 themes/next/_config.yml -- 有点多，直接备份吧</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 把自己需要的需要的page安装下</span></span><br><span class="line">hexo new page about</span><br><span class="line">hexo new page tags</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 首页摘要 -- 太费劲了，直接用归档页面当成主页</span></span><br><span class="line">~/myblog/themes/next/layout </span><br><span class="line">mv index.swig index_bak.swig</span><br><span class="line">cp archive.swig index.swig</span><br><span class="line"><span class="meta">#</span><span class="bash"> 代码可折叠 - 收缩</span></span><br><span class="line">codeblock:</span><br><span class="line">  highlight_theme: night</span><br><span class="line"><span class="meta">#</span><span class="bash"> 显得太大了 -- 不管能看就行</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 文章目录</span></span><br><span class="line">toc:</span><br><span class="line">  expand_all: true</span><br></pre></td></tr></table></figure><p>接着就是平常使用了，创建blog-deploy</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先将hello world这个page删除</span></span><br><span class="line">rm -rf /source/_posts/hello-world.md</span><br><span class="line">hexo new &#x27;blog&#x27;</span><br><span class="line">hexo s</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure><h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>真的前端做到最后，觉得会疯，太容易产生强迫症了。</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h4 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h4&gt;&lt;p&gt;最近开始重拾写blog的习惯，想着坚持点啥吧。&lt;/p&gt;
+&lt;p&gt;结果将github上的网站打开，2020-03最近一篇，现在可是2021-12</summary>
+      
+    
+    
+    
+    
+    <category term="hexo配置" scheme="https://zhangtinglu.github.io/tags/hexo%E9%85%8D%E7%BD%AE/"/>
     
   </entry>
   
