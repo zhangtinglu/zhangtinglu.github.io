@@ -6,7 +6,7 @@
   <link href="https://zhangtinglu.github.io/atom.xml" rel="self"/>
   
   <link href="https://zhangtinglu.github.io/"/>
-  <updated>2021-12-29T07:34:30.750Z</updated>
+  <updated>2021-12-30T03:48:42.828Z</updated>
   <id>https://zhangtinglu.github.io/</id>
   
   <author>
@@ -15,6 +15,51 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>proxysql mirror功能的实现</title>
+    <link href="https://zhangtinglu.github.io/2021/12/30/proxysql-mirror%E5%8A%9F%E8%83%BD%E7%9A%84%E5%AE%9E%E7%8E%B0/"/>
+    <id>https://zhangtinglu.github.io/2021/12/30/proxysql-mirror%E5%8A%9F%E8%83%BD%E7%9A%84%E5%AE%9E%E7%8E%B0/</id>
+    <published>2021-12-30T03:45:01.000Z</published>
+    <updated>2021-12-30T03:48:42.828Z</updated>
+    
+    
+    
+    
+    
+    <category term="proxysql" scheme="https://zhangtinglu.github.io/tags/proxysql/"/>
+    
+    <category term="mirror" scheme="https://zhangtinglu.github.io/tags/mirror/"/>
+    
+    <category term="流量镜像" scheme="https://zhangtinglu.github.io/tags/%E6%B5%81%E9%87%8F%E9%95%9C%E5%83%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>proxysql网络模型</title>
+    <link href="https://zhangtinglu.github.io/2021/12/30/proxysql%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/"/>
+    <id>https://zhangtinglu.github.io/2021/12/30/proxysql%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/</id>
+    <published>2021-12-30T02:57:06.000Z</published>
+    <updated>2021-12-30T03:38:03.550Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h4><p>不开idle线程，开了4个mysql线程，为什么每一个线程的mypoll.fds不一样呢？</p><table><thead><tr><th>线程号</th><th>pipefd</th><th>mypolls.fds</th></tr></thead><tbody><tr><td>LWP 284</td><td>18/19</td><td>18/26</td></tr><tr><td>LWP 285</td><td>20/21</td><td>20/27</td></tr><tr><td>LWP 286</td><td>22/23</td><td>22/28</td></tr><tr><td>LWP 287</td><td>24/25</td><td>24/29</td></tr></tbody></table><p>mypolls.fds[0]是为了和主线程进行交互，所以是pipefd[0]。</p><p>但是为啥mypolls.fds[1]不一样呢，按理说mysql监听的都是同一个端口，worker线程也应该是去监听这个端口</p><p>首先，mypolls.fds是怎么来的</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// pending_listener_add 看看这个是怎么来的</span></span><br><span class="line"><span class="keyword">while</span> ((n=__sync_add_and_fetch(&amp;mypolls.pending_listener_add,<span class="number">0</span>))) &#123;</span><br><span class="line">  <span class="built_in">poll_listener_add</span>(n); <span class="comment">// 这个负责添加每个线程的poll.fds</span></span><br><span class="line">  <span class="built_in">assert</span>(__sync_bool_compare_and_swap(&amp;mypolls.pending_listener_add,n,<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>接着，pending_listener_add是怎么被添加进去的</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">MySQL_Threads_Handler::listener_add</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *iface)</span> </span>&#123;</span><br><span class="line">  rc=MLM-&gt;<span class="built_in">add</span>(iface, num_threads, &amp;perthrsocks); <span class="comment">// 这里是如果是unix的系统会使用SO_REUSEPORT来为每一线程分配fd</span></span><br><span class="line">  <span class="keyword">if</span> (rc&gt;<span class="number">-1</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (perthrsocks==<span class="literal">NULL</span>) &#123;</span><br><span class="line">      <span class="keyword">for</span> (i=<span class="number">0</span>;i&lt;num_threads;i++) &#123;</span><br><span class="line">        MySQL_Thread *thr=(MySQL_Thread *)mysql_threads[i].worker;</span><br><span class="line">        <span class="comment">// 如果没有复用，那么每一个线程的poll.fds都是添加的同一个fd</span></span><br><span class="line">        <span class="keyword">while</span>(!__sync_bool_compare_and_swap(&amp;thr-&gt;mypolls.pending_listener_add,<span class="number">0</span>,rc)) &#123;</span><br><span class="line">          <span class="built_in">usleep</span>(<span class="number">10</span>); <span class="comment">// pause a bit</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">for</span> (i=<span class="number">0</span>;i&lt;num_threads;i++) &#123;</span><br><span class="line">        MySQL_Thread *thr=(MySQL_Thread *)mysql_threads[i].worker;</span><br><span class="line">        <span class="comment">// 如果有复用的话，那就是在MLM-&gt;add()函数里面生成的了对应的fd，塞进去</span></span><br><span class="line">        <span class="keyword">while</span>(!__sync_bool_compare_and_swap(&amp;thr-&gt;mypolls.pending_listener_add,<span class="number">0</span>,perthrsocks[i])) &#123;</span><br><span class="line">          ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// main里面</span></span><br><span class="line">GloMTH-&gt;<span class="built_in">start_listeners</span>();</span><br></pre></td></tr></table></figure><p>最终不一样的原因也就是使用了端口复用。</p><p>那么，为什么要使用端口复用技术，同一个端口poll的时候事件会被分配到哪个fd上呢？</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h4 id=&quot;问题描述&quot;&gt;&lt;a href=&quot;#问题描述&quot; class=&quot;headerlink&quot; title=&quot;问题描述&quot;&gt;&lt;/a&gt;问题描述&lt;/h4&gt;&lt;p&gt;不开idle线程，开了4个mysql线程，为什么每一个线程的mypoll.fds不一样呢？&lt;/p&gt;
+&lt;table&gt;
+&lt;the</summary>
+      
+    
+    
+    
+    
+    <category term="proxysql" scheme="https://zhangtinglu.github.io/tags/proxysql/"/>
+    
+    <category term="网络模型" scheme="https://zhangtinglu.github.io/tags/%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
   
   <entry>
     <title>本地调试proxysql</title>

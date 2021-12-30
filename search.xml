@@ -1,68 +1,517 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>hashicorp:raft源码系列(1)--导读</title>
-    <url>/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-1-%E5%AF%BC%E8%AF%BB/</url>
-    <content><![CDATA[<h3 id="Raft是干啥的？"><a href="#Raft是干啥的？" class="headerlink" title="Raft是干啥的？"></a>Raft是干啥的？</h3><p><a href="http://thesecretlivesofdata.com/raft/">动画说明</a></p>
-<p>简述如下图：用户SET 5，3个不同节点都能获取SET 5的操作。所谓的最简单的分布式一致性。</p>
-<p><a href="https://imgtu.com/i/oO3r0P"><img src="https://s4.ax1x.com/2021/12/13/oO3r0P.png" alt="oO3r0P.png"></a></p>
-<h3 id="Raft项目包含哪些模块？"><a href="#Raft项目包含哪些模块？" class="headerlink" title="Raft项目包含哪些模块？"></a>Raft项目包含哪些模块？</h3><h4 id="项目有多少行"><a href="#项目有多少行" class="headerlink" title="项目有多少行?"></a>项目有多少行?</h4><p>分析下整个项目大概是1W多行，并不是很大，代码注释非常齐全，理解起来比较轻松。代码抽象得很好，非常值得学习。</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">-&gt;</span><span class="bash"> % cloc ./</span></span><br><span class="line">      77 text files.</span><br><span class="line">      77 unique files.</span><br><span class="line">       8 files ignored.</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 1.90  T=0.09 s (814.1 files/s, 201614.7 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Go                              57           2207           2786          11864</span><br><span class="line">Markdown                         4            106              0            255</span><br><span class="line">YAML                             4             26             29            141</span><br><span class="line">XML                              4              0              0            108</span><br><span class="line">make                             1             10              2             33</span><br><span class="line">Bourne Shell                     1              3              3             10</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                            71           2352           2820          12411</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+    <title>proxysql mirror功能的实现</title>
+    <url>/2021/12/30/proxysql-mirror%E5%8A%9F%E8%83%BD%E7%9A%84%E5%AE%9E%E7%8E%B0/</url>
+    <content><![CDATA[]]></content>
+      <tags>
+        <tag>proxysql</tag>
+        <tag>mirror</tag>
+        <tag>流量镜像</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>proxysql网络模型</title>
+    <url>/2021/12/30/proxysql%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/</url>
+    <content><![CDATA[<h4 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h4><p>不开idle线程，开了4个mysql线程，为什么每一个线程的mypoll.fds不一样呢？</p>
+<table>
+<thead>
+<tr>
+<th>线程号</th>
+<th>pipefd</th>
+<th>mypolls.fds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>LWP 284</td>
+<td>18/19</td>
+<td>18/26</td>
+</tr>
+<tr>
+<td>LWP 285</td>
+<td>20/21</td>
+<td>20/27</td>
+</tr>
+<tr>
+<td>LWP 286</td>
+<td>22/23</td>
+<td>22/28</td>
+</tr>
+<tr>
+<td>LWP 287</td>
+<td>24/25</td>
+<td>24/29</td>
+</tr>
+</tbody></table>
+<p>mypolls.fds[0]是为了和主线程进行交互，所以是pipefd[0]。</p>
+<p>但是为啥mypolls.fds[1]不一样呢，按理说mysql监听的都是同一个端口，worker线程也应该是去监听这个端口</p>
+<p>首先，mypolls.fds是怎么来的</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">// pending_listener_add 看看这个是怎么来的</span></span><br><span class="line"><span class="keyword">while</span> ((n=__sync_add_and_fetch(&amp;mypolls.pending_listener_add,<span class="number">0</span>))) &#123;</span><br><span class="line">  <span class="built_in">poll_listener_add</span>(n); <span class="comment">// 这个负责添加每个线程的poll.fds</span></span><br><span class="line">  <span class="built_in">assert</span>(__sync_bool_compare_and_swap(&amp;mypolls.pending_listener_add,n,<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h4 id="从哪里开始？"><a href="#从哪里开始？" class="headerlink" title="从哪里开始？"></a>从哪里开始？</h4><p>首先，我们来看下<code>api.go/Raft</code>结构，表示的是一个Raft节点，最核心的数据结构。划分3大块</p>
+<p>接着，pending_listener_add是怎么被添加进去的</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">MySQL_Threads_Handler::listener_add</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *iface)</span> </span>&#123;</span><br><span class="line">  rc=MLM-&gt;<span class="built_in">add</span>(iface, num_threads, &amp;perthrsocks); <span class="comment">// 这里是如果是unix的系统会使用SO_REUSEPORT来为每一线程分配fd</span></span><br><span class="line">  <span class="keyword">if</span> (rc&gt;<span class="number">-1</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (perthrsocks==<span class="literal">NULL</span>) &#123;</span><br><span class="line">      <span class="keyword">for</span> (i=<span class="number">0</span>;i&lt;num_threads;i++) &#123;</span><br><span class="line">        MySQL_Thread *thr=(MySQL_Thread *)mysql_threads[i].worker;</span><br><span class="line">        <span class="comment">// 如果没有复用，那么每一个线程的poll.fds都是添加的同一个fd</span></span><br><span class="line">        <span class="keyword">while</span>(!__sync_bool_compare_and_swap(&amp;thr-&gt;mypolls.pending_listener_add,<span class="number">0</span>,rc)) &#123;</span><br><span class="line">          <span class="built_in">usleep</span>(<span class="number">10</span>); <span class="comment">// pause a bit</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">for</span> (i=<span class="number">0</span>;i&lt;num_threads;i++) &#123;</span><br><span class="line">        MySQL_Thread *thr=(MySQL_Thread *)mysql_threads[i].worker;</span><br><span class="line">        <span class="comment">// 如果有复用的话，那就是在MLM-&gt;add()函数里面生成的了对应的fd，塞进去</span></span><br><span class="line">        <span class="keyword">while</span>(!__sync_bool_compare_and_swap(&amp;thr-&gt;mypolls.pending_listener_add,<span class="number">0</span>,perthrsocks[i])) &#123;</span><br><span class="line">          ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">// main里面</span></span><br><span class="line">GloMTH-&gt;<span class="built_in">start_listeners</span>();</span><br></pre></td></tr></table></figure>
+
+<p>最终不一样的原因也就是使用了端口复用。</p>
+<p>那么，为什么要使用端口复用技术，同一个端口poll的时候事件会被分配到哪个fd上呢？</p>
+]]></content>
+      <tags>
+        <tag>proxysql</tag>
+        <tag>网络模型</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>本地调试proxysql</title>
+    <url>/2021/12/29/%E6%9C%AC%E5%9C%B0%E8%B0%83%E8%AF%95proxysql/</url>
+    <content><![CDATA[<h4 id="1-构建镜像"><a href="#1-构建镜像" class="headerlink" title="1. 构建镜像"></a>1. 构建镜像</h4><p>Dockerfile + 构建镜像</p>
+<figure class="highlight dockerfile"><table><tr><td class="code"><pre><span class="line"><span class="keyword">FROM</span> centos:<span class="number">7</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">LABEL</span><span class="bash"> description=<span class="string">&quot;Container for dev &amp; debug&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装依赖</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -y automake bzip2 cmake make gcc-c++ gcc git openssl openssl-devel gnutls gnutls-devel libtool patch openssh-server perl-IPC-Cmd</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -y gdb-gdbserver <span class="built_in">which</span> </span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置ssh服务</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">echo</span> <span class="string">&#x27;PermitRootLogin yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;PermitEmptyPasswords yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;PasswordAuthentication yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;root:root&#x27;</span> | chpasswd &amp;&amp; \</span></span><br><span class="line"><span class="bash">    ssh-keygen -A</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">EXPOSE</span> <span class="number">22</span> </span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">&quot;/usr/sbin/sshd&quot;</span>, <span class="string">&quot;-D&quot;</span>]</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker build -t proxysqldebug:v1 .</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-运行容器"><a href="#2-运行容器" class="headerlink" title="2. 运行容器"></a>2. 运行容器</h4><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker run -d -p 2222:22 --security-opt seccomp:unconfined -v $PWD:/home/luzhangting001/proxysql --name proxysqldev proxysqldebug:v1</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 后面容器stop + start 不要在重启，如下图</span></span><br></pre></td></tr></table></figure>
+
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229121528631.png" alt="image-20211229121528631" style="zoom:100%; float:left" />
+
+<h4 id="3-启动debug"><a href="#3-启动debug" class="headerlink" title="3. 启动debug"></a>3. 启动debug</h4><p>配置launch.json</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="string">&quot;configurations&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;(gdb) Launch&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;cppdbg&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;request&quot;</span>: <span class="string">&quot;launch&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;program&quot;</span>: <span class="string">&quot;/home/luzhangting001/proxysql/src/proxysql&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;args&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;--foreground&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--debug&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--config&quot;</span>,</span><br><span class="line">            <span class="string">&quot;/home/luzhangting001/proxysql/src/proxysql.cfg&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--initial&quot;</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="attr">&quot;stopAtEntry&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;cwd&quot;</span>: <span class="string">&quot;/home/luzhangting001/proxysql&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;pipeTransport&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;debuggerPath&quot;</span>: <span class="string">&quot;/usr/bin/gdb&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;pipeProgram&quot;</span>: <span class="string">&quot;/usr/bin/ssh&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;pipeArgs&quot;</span>: [</span><br><span class="line">                <span class="string">&quot;root@localhost&quot;</span>,</span><br><span class="line">                <span class="string">&quot;-p&quot;</span>,</span><br><span class="line">                <span class="string">&quot;2222&quot;</span></span><br><span class="line">            ],</span><br><span class="line">            <span class="attr">&quot;pipeCwd&quot;</span>: <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;environment&quot;</span>: [],</span><br><span class="line">        <span class="attr">&quot;externalConsole&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;MIMode&quot;</span>: <span class="string">&quot;gdb&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;sourceFileMap&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;/home/luzhangting001/proxysql&quot;</span>: <span class="string">&quot;$&#123;workspaceFolder&#125;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>启动报错：因为之前弄过，ssh报错了</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229121827990.png" alt="image-20211229121827990" style="zoom:100%; float:left" />
+
+<p>将known_hosts里面的相关信息删除, 其实我不知道是不是必须这么做，可能不是必须的</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229122615654.png" alt="image-20211229122615654" style="zoom:100%; float:left" />
+
+<p>将本机的公钥上传</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">ssh-copy-id -p 2222 root@localhost</span><br></pre></td></tr></table></figure>
+
+<p>vscode里面启动</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229153334425.png" alt="image-20211229153334425" style="zoom:80%;float:left" />
+]]></content>
+      <tags>
+        <tag>proxysql</tag>
+        <tag>mac本地环境</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>数据归档详细设计与实现</title>
+    <url>/2021/12/28/%E6%95%B0%E6%8D%AE%E5%BD%92%E6%A1%A3-%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/</url>
+    <content><![CDATA[<h4 id="查询能力"><a href="#查询能力" class="headerlink" title="查询能力"></a>查询能力</h4><p>实现的效果</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211228110147046.png" alt="image-20211228110147046" style="zoom:100%;float:left" />
+
+<p>人工指定</p>
+<p>当前select的流程</p>
+<p>加入路由能力后的select流程</p>
+<p>是否需要保留用户指定的这个能力</p>
+<p>是否需要支持多个字段归档 – 或者活后期可以扩展</p>
+<p>分库分表</p>
+<p>归档的规则存储在哪里</p>
+]]></content>
+      <tags>
+        <tag>数据归档</tag>
+        <tag>方案设计</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>生活日记:初</title>
+    <url>/2021/12/26/%E7%94%9F%E6%B4%BB%E6%97%A5%E8%AE%B0-%E5%88%9D/</url>
+    <content><![CDATA[<h4 id="初"><a href="#初" class="headerlink" title="初"></a>初</h4><p>这个标题也是困扰我好久，先说说命名为初的原因。</p>
 <ol>
-<li><p>NewRaft节点需要的信息：下图中标红点的，几大核心组成。下一篇我们从网络层开始详细分析。</p>
+<li>第一写生活类的博客</li>
+<li>开始🤔思考想过什么样的生活</li>
+</ol>
+<p>不知不觉已在北京工作4年多了，晚上散步前突然想到以后想要生活在哪里的话题。</p>
+<p>想要去昆明生活，觉得昆明春城，四季如春。</p>
+<p>接着就开始考虑，攒够多少钱可以去呢，毕竟工作机会不多。</p>
+<p>如果以后有小孩了，小孩教育怎么办呢。</p>
+<p>是不是还得买房呢，还有我对昆明也不熟悉吧。</p>
+<p>看~ 这就是典型的中国人，我想但我并不敢，需要我操心的事情是在太多了。</p>
+<p>我现在生活在北京，这座城市我已经生活了4年多了，可是我想也许并没有那么了解它。</p>
+<p>与其将时间花在不知未来会如何的思考上，不如现在就开始简单而笨拙的记录，记录北京这座城，记录我在这座城市呆过的痕迹，直到离开。</p>
+<p>清河站离我现在住的地方是真的近，所以就先从这里着手吧~</p>
+]]></content>
+      <tags>
+        <tag>生活</tag>
+        <tag>北京</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基础知识: bit vs byte</title>
+    <url>/2021/12/24/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86-bit-vs-byte/</url>
+    <content><![CDATA[<p>出来混都是要还的，基础知识不牢靠</p>
+<p>bit： 0-1码</p>
+<p>byte：8个0-1码，这里就有一个疑问，<strong>为啥是8呢</strong>，和CPU有关系吗？一个字节是8位</p>
+<p>Go语言从 的 var a int</p>
+<p>1 编译器 -&gt;</p>
+<p>2 OS（32位/64位）</p>
+<p>3 CPU</p>
+<p>一个int为啥设计4个byte or 8byte</p>
+]]></content>
+      <tags>
+        <tag>计算机基础</tag>
+        <tag>bit</tag>
+        <tag>byte</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Typora写blog中粘贴图片自动上传图床</title>
+    <url>/2021/12/24/blog%E5%9B%BE%E5%BA%8A%E7%AF%87/</url>
+    <content><![CDATA[<h4 id="Goal"><a href="#Goal" class="headerlink" title="Goal"></a>Goal</h4><p>我电脑上 cmd + trl + a(微信截图) -&gt; 来到Typora(cmd + v) 粘贴。</p>
+<p>然后就自动帮我上传图床，并且替换成图床照片吧，这样我也不需要切换到图床上去捣鼓了，就专注在Typora上去打字。</p>
+<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>图床：<a href="https://blog.svend.cc/upic/tutorials/github/">github</a>、<a href="https://blog.svend.cc/upic/tutorials/gitee/">gitee</a>，我自己比较常用的是路过图床，但是uPic不会配置，那就算啦，佛系找个能成功的。</p>
 <blockquote>
-<p>除了raftState，其他部分全是interface，模块抽象的很细致。</p>
+<p>采坑：github图片可以正常上传，但是展示出来</p>
 </blockquote>
-</li>
-<li><p>Leader操作相关：整个Raft最核心的就是Leader的状态转换过程。我们后续也会对这一部分的实现做详细说明。</p>
-</li>
-<li><p>一些异步操作：这一块是嵌入在各个模块的实现中的。项目里面一些chan的使用也是值得学习的。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225084632762.png" alt="image-20211225084632762" style="zoom:30%;float:left" />
+
+<p>因此，我们还好折腾Gitee配置。</p>
+<ol>
+<li><p>创建仓库</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225085435762.png" alt="image-20211225085435762" style="zoom:25%;float:left" />
+
+<ol start="2">
+<li>生成私人令牌</li>
+</ol>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225083650340.png" alt="image-20211225083650340" style="zoom:25%;float:left" />
+
+<ol start="3">
+<li><p>配置uPic</p>
+<p>uPic直接github上下载了安装好，然后按照下面的方法配置</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090108133.png" alt="image-20211225090108133" style="zoom:25%;float:left" /></li>
+<li><p>配置Typora</p>
+<p>cmd+,打开软件偏好设置,成功了之后就在写blog的时候直接截图+粘贴吧，巴斯的很~</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090323825.png" alt="image-20211225090323825" style="zoom:25%;float:left" /></li>
+</ol>
 </li>
 </ol>
-<p><a href="https://imgtu.com/i/oO0Ein"><img src="https://s4.ax1x.com/2021/12/13/oO0Ein.png" alt="oO0Ein.png"></a></p>
-<h4 id="新建Raft节点逻辑？"><a href="#新建Raft节点逻辑？" class="headerlink" title="新建Raft节点逻辑？"></a>新建Raft节点逻辑？</h4><ul>
-<li><p>① 校验配置</p>
-</li>
-<li><p>② 获取当前任务，这里是从StableStore中获取</p>
-</li>
-<li><p>③ 获取最近的日志号和具体Log，从LogStore中获取</p>
-</li>
-<li><p>④ 创建Buffer applyCh，用来应用Log到FSM。这里Future的应用可以学习下，后面写applyLog的时候可以详细分析。</p>
-</li>
-<li><p>⑤ 初始化Raft结构。</p>
-</li>
-<li><p>⑥ Set各种变量，这里可以研究下config是怎么实现线程安全的变更。</p>
-</li>
-<li><p>⑦ 尝试从备份中恢复，处理peer变更日志，eg：添加节点、删除节点。这里为啥只处理Peer变更信息，都已经将Log解析出来了，为啥不直接应用呢？</p>
-</li>
-<li><p>⑧ 给传输层注册心跳处理器。在这里初始化，而不是在goroutine里面处理，是为了避免队头阻塞。</p>
-</li>
-<li><p>⑨ 启动goroutine，如下启动了3个协程。</p>
-<p><a href="https://imgtu.com/i/oOhDud"><img src="https://s4.ax1x.com/2021/12/13/oOhDud.png" alt="oOhDud.png"></a></p>
-</li>
-</ul>
-<p>代码如下</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewRaft</span><span class="params">(conf *Config, fsm FSM, logs LogStore, stable StableStore, snaps SnapshotStore, trans Transport)</span> <span class="params">(*Raft, error)</span></span> &#123;</span><br><span class="line">  <span class="comment">// ① 校验配置</span></span><br><span class="line">  <span class="keyword">if</span> err := ValidateConfig(conf); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ② 获取当前任务，这里是从StableStore中获取</span></span><br><span class="line">  currentTerm, err := stable.GetUint64(keyCurrentTerm)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ③ 获取最近的日志号和具体Log，从LogStore中获取；</span></span><br><span class="line">  lastIndex, err := logs.LastIndex()</span><br><span class="line">  <span class="keyword">if</span> err = logs.GetLog(lastIndex, &amp;lastLog); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">&quot;failed to get last log at index %d: %v&quot;</span>, lastIndex, err)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ④ 创建Buffer applyCh，用来应用Log到FSM。这里Future的应用可以学习下。</span></span><br><span class="line">  applyCh := <span class="built_in">make</span>(<span class="keyword">chan</span> *logFuture)</span><br><span class="line">  <span class="keyword">if</span> conf.BatchApplyCh &#123;</span><br><span class="line">    applyCh = <span class="built_in">make</span>(<span class="keyword">chan</span> *logFuture, conf.MaxAppendEntries)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑤ 初始化Raft结构。</span></span><br><span class="line">  r := &amp;Raft&#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑥ Set各种变量，下面这一行的实现可以研究下，为啥不直接r.conf = conf</span></span><br><span class="line">  r.conf.Store(*conf)</span><br><span class="line">  r.setState(Follower)</span><br><span class="line">  r.setCurrentTerm(currentTerm)</span><br><span class="line">  r.setLastLog(lastLog.Index, lastLog.Term)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑦ 尝试从备份中恢复，处理peer变更日志，eg：添加节点、删除节点. </span></span><br><span class="line">  <span class="keyword">if</span> err := r.restoreSnapshot(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">  &#125;</span><br><span class="line">  snapshotIndex, _ := r.getLastSnapshot()</span><br><span class="line">  <span class="keyword">for</span> index := snapshotIndex + <span class="number">1</span>; index &lt;= lastLog.Index; index++ &#123;</span><br><span class="line">    <span class="keyword">var</span> entry Log</span><br><span class="line">    <span class="keyword">if</span> err := r.logs.GetLog(index, &amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> err := r.processConfigurationLogEntry(&amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// ⑧ 给传输层注册心跳处理器</span></span><br><span class="line">  trans.SetHeartbeatHandler(r.processHeartbeat)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑨ 启动goroutine</span></span><br><span class="line">  r.goFunc(r.run)</span><br><span class="line">  r.goFunc(r.runFSM)</span><br><span class="line">  r.goFunc(r.runSnapshots)</span><br><span class="line">  <span class="keyword">return</span> r, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+]]></content>
+      <tags>
+        <tag>Typora</tag>
+        <tag>图片粘贴</tag>
+        <tag>上传图床</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>归档库选择-mysql vs tidb vs clickhouse vs ob</title>
+    <url>/2021/12/23/%E5%BD%92%E6%A1%A3%E5%BA%93%E9%80%89%E6%8B%A9-mysql-vs-tidb-vs-clickhouse-vs-ob/</url>
+    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>我们希望将MySQL里面的冷数据归档出来，那就需要选择一个存储引擎来承接这部分数据。因此我们对目前市面上主流的存储进行对比：mysql innodb、mysql tokudb、tidb、ob、clickhouse</p>
+<h4 id="测试说明"><a href="#测试说明" class="headerlink" title="测试说明"></a>测试说明</h4><p><strong>物理机器</strong></p>
+<table>
+<thead>
+<tr>
+<th>机器</th>
+<th>OS</th>
+<th>CPU</th>
+<th>内存</th>
+<th>磁盘</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Host1</td>
+<td>CentOS Linux release 7.5.1804 (Core)</td>
+<td>40  Intel(R) Xeon(R) Silver 4114 CPU @ 2.20GHz</td>
+<td>187G</td>
+<td>nvme0n1 1.5T</td>
+</tr>
+<tr>
+<td>Host2</td>
+<td>CentOS Linux release 7.5.1804 (Core)</td>
+<td>48  Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz</td>
+<td>125G</td>
+<td>nvme0n1 1.5T</td>
+</tr>
+<tr>
+<td>Host3</td>
+<td>CentOS Linux release 7.5.1804 (Core)</td>
+<td>32  Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz</td>
+<td>125G</td>
+<td>nvme0n1 5.8T</td>
+</tr>
+</tbody></table>
+<p><strong>测试说明</strong></p>
+<p>内存配置：所有节点同意配置4GB</p>
+<p>CPU核数：4核</p>
+<p>写入数据：5个表，每个表1亿行数据</p>
+<p><strong>测试结论</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">存储</th>
+<th>写入时间</th>
+<th>存储量</th>
+<th>TP查询</th>
+<th>AP查询</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">mysql innodb</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="left">mysql tokudb</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="left">tidb</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="left">ob</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="left">clickhouse</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+]]></content>
+      <tags>
+        <tag>tidb</tag>
+        <tag>归档</tag>
+        <tag>mysql</tag>
+        <tag>ob</tag>
+        <tag>clickhouse</tag>
+        <tag>压缩率</tag>
+        <tag>性能</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CockroachDB事务模型</title>
+    <url>/2021/12/21/%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B-CockroachDB/</url>
+    <content><![CDATA[<p>前面我们看下Tidb的事务模型，基于Percolator实现，接着我们看下CockroachDB的实现方案，基于Spanner实现，对比二者的区别。我们还是从下面三个方面</p>
+<h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><h5 id="分布式事务模型要做什么？"><a href="#分布式事务模型要做什么？" class="headerlink" title="分布式事务模型要做什么？"></a>分布式事务模型要做什么？</h5><h5 id="需要思考的问题有哪些？"><a href="#需要思考的问题有哪些？" class="headerlink" title="需要思考的问题有哪些？"></a>需要思考的问题有哪些？</h5><h5 id="基于Spanner的解决方案？"><a href="#基于Spanner的解决方案？" class="headerlink" title="基于Spanner的解决方案？"></a>基于Spanner的解决方案？</h5><h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><h4 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h4><h4 id="Tidb-VS-CockroachDB"><a href="#Tidb-VS-CockroachDB" class="headerlink" title="Tidb VS CockroachDB"></a>Tidb VS CockroachDB</h4><p><strong>参考文档</strong></p>
+<p><a href="https://www.cockroachlabs.com/docs/stable/architecture/transaction-layer.html">https://www.cockroachlabs.com/docs/stable/architecture/transaction-layer.html</a></p>
+<p><a href="https://nan01ab.github.io/2021/06/Distributed-Txn(5).html">https://nan01ab.github.io/2021/06/Distributed-Txn(5).html</a></p>
+]]></content>
+      <tags>
+        <tag>CockroachDB</tag>
+        <tag>分布式事务</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>tidb事务模型</title>
+    <url>/2021/12/21/%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B-TiDB/</url>
+    <content><![CDATA[<p>之前的看raft源码分析的时候，去看了看<code>atomic.Value</code>的实现，之后就一直想着Tidb的事务的实现，因为实现的思路比较类似的。Tidb的分布式事务模型是基于Google的Percolator实现的。接着我们从原理、代码实现、以及优化三大块来详细看看。</p>
+<h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><h5 id="分布式事务模型要做什么？"><a href="#分布式事务模型要做什么？" class="headerlink" title="分布式事务模型要做什么？"></a>分布式事务模型要做什么？</h5><p><a href="https://imgtu.com/i/T8tPBj"><img src="https://s4.ax1x.com/2021/12/23/T8tPBj.md.png" alt="T8tPBj.md.png"></a></p>
+<p>图片来源：<a href="https://www.jianshu.com/p/bca8a678fafc">blog地址</a>  [如有问题，请联系删除]。3个事务并发写入，T1/T2更新同一个分片的相同行(b)。T1/T3以不同的顺序更新相同的行。</p>
+<h5 id="需要思考的问题有哪些？"><a href="#需要思考的问题有哪些？" class="headerlink" title="需要思考的问题有哪些？"></a>需要思考的问题有哪些？</h5><p>我们从事务的整个生命周期来详细考虑这个事情。</p>
+<p><strong>单事务</strong></p>
+<p>1、T1事务更新(a,b)两条记录，怎么知道记录在哪些分片上？</p>
+<p>2、T1事务同时更新了2个分片，怎么保证原子性，同时成功or失败？</p>
+<p>3、每一条记录又有3个副本，怎么保证多副本的同步？</p>
+<p><strong>并发事务</strong></p>
+<p>、T1/T2同时更新分片2，会不会有冲突？冲突检测怎么做？如果有冲突怎么办？  – 乐观事务 or  悲观事务</p>
+<p>5、T1/T3用不同的顺序更新相同的数据，会不会死锁？ – 死锁检测</p>
+<p>6、不同的隔离级别怎么实现？ – MVCC</p>
+<h5 id="基于Percolator的解决方案？"><a href="#基于Percolator的解决方案？" class="headerlink" title="基于Percolator的解决方案？"></a>基于Percolator的解决方案？</h5><p>先用<a href="http://notes.stephenholiday.com/Percolator.pdf">论文</a>中的例子来简单说明下整个流程：Bob-&gt;Joe转账$7的整个过程。bal表示的是列。</p>
+<p>1、初始状态，Bob在时刻5有$10，Joe在时刻5有$2。时刻5-&gt;时刻6没有任何操作，所有6的时候还是data@5的数据，如最后一列。</p>
+<p><a href="https://imgtu.com/i/TKxBkj"><img src="https://s4.ax1x.com/2021/12/21/TKxBkj.png" alt="TKxBkj.png"></a></p>
+<p>2、转账开始，Bob账号发生两个变化，时刻7先将Bob账户的lock字段(第3列)设置为primary，然后将data(第二列)进行更新，余额为$3。</p>
+<p><a href="https://imgtu.com/i/TKzZNj"><img src="https://s4.ax1x.com/2021/12/21/TKzZNj.png" alt="TKzZNj.png"></a></p>
+<p>3、Bob账户更新完成，开始更新Joe账户，Joe账户操作同Bob(注意还是时刻7，开始时间)，却别是获取的lock不是primary了，而是ref to primary(第三列)。例子中secondary行只有一行，实际可能是多行，row by row的做获取锁&amp;更新数据的操作。</p>
+<p><a href="https://imgtu.com/i/TMSiGR"><img src="https://s4.ax1x.com/2021/12/21/TMSiGR.png" alt="TMSiGR.png"></a></p>
+<p>4、接下来数据更新好了，进入到提交阶段。新的时刻8，将primary的锁信息删除，并将数据写入到bal:write列(第4列)，到这里事务就算是提交了。secondary行的提交是异步的。这个时候读Bob的账户看到的值就是$3。</p>
+<p><a href="https://imgtu.com/i/TMpNX6"><img src="https://s4.ax1x.com/2021/12/21/TMpNX6.png" alt="TMpNX6.png"></a></p>
+<p>5、最后更新Bob账户信息，操作同步4，删除锁&amp;添加时刻8的信息。如果是多行需要更新，也是row by row的去更新。</p>
+<p><a href="https://imgtu.com/i/TMC9Ig"><img src="https://s4.ax1x.com/2021/12/21/TMC9Ig.png" alt="TMC9Ig.png"></a></p>
+<p>看下事务相关的3列：</p>
+<p>c:lock : 锁信息，活跃事务。</p>
+<p>c:write ：提交事务。如果primary已经commit了，不管secondary有没有应用完，都是提交事务。</p>
+<p>c:data ： 存储的就是各个时刻的数据。</p>
+<p>接着我们来看看之前提出的问题怎么使用上面的模型一个个的解决掉。</p>
+<p>1、T1事务更新(a,b)两条记录，怎么知道记录在哪些分片上？</p>
+<p>​     从PD里面获取，这个不是事务提交的重点，后面可以研究下数据分布的策略。</p>
+<p>2、T1事务同时更新了2个分片，怎么保证原子性，同时成功or失败？</p>
+<p>​     2阶段提交，先prewrite，再commit，以primary:write作为事务提交的标准。</p>
+<blockquote>
+<p>🤔: 为啥不直接全部加锁，要这样麻烦的使用2阶段？</p>
+<p>​      如果直接加锁，那在整个提交过程中都不可用。row by row的提交&amp;释放能部分优化性能。</p>
+</blockquote>
+<blockquote>
+<p>🤔: 为啥要在prewrite阶段写数据，不在commit阶段写呢？</p>
+<p>​       以上面的情况为例，Joe账户在异步应用之前，版本7只有lock，没有data，必须得等到所有的行都异步的应用完了数据，才能给客户端返回，非常容易超时。</p>
+</blockquote>
+<blockquote>
+<p>🤔: 既然有2阶段，是不是马上想到了协调器？</p>
+<p>​      实际上percolator模型使用write列来弱化了这一点，在commit阶段并不需要通知所有row去commit，只需要完成primary row的更新即可。后面由异步的任务去实现。在prewrite阶段确实需要确保所有需要修改的行都顺利加锁并更新data。            </p>
+</blockquote>
+<blockquote>
+<p>🤔: 怎么获取ts？</p>
+<p>​      这里的时刻5、6、7是怎么去获取的，也就是原子钟。从PD去拿，那么很显然，并发高的时候这里就是瓶颈了。</p>
+</blockquote>
+<p> 3、每一条记录又有3个副本，怎么保证多副本的同步？</p>
+<p>​    TiDB使用Raft协议来在多数节点上同步数据，Raft协议的实现之前的blog已经分析了，详情请移步。</p>
+<p>4、T1/T2同时更新分片2，会不会有冲突？冲突检测怎么做？如果有冲突怎么办？ </p>
+<p>​    上面的流程中我们使用乐观锁来获取secondary锁，但是实际使用上冲突大的时候获取锁的概率低，这样很容易导致事务回滚。我们先来对比下乐观锁 VS 悲观锁</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>生活例子</th>
+<th>图例</th>
+<th>特征</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>乐观锁</td>
+<td>直接去餐厅去吃饭<br />1. 人多没地，在回来，白跑一趟<br />2. 人少有地直接吃了</td>
+<td>T1单事务<br />    a,b没有锁,可以直接加上<br />T1&amp;T2并发<br />    T1先来a,b上锁<br />    T2:b,e无法获取b的锁，回滚</td>
+<td>冲突少：性能高<br />冲突多：回滚代价大</td>
+</tr>
+<tr>
+<td>悲观锁</td>
+<td>1. 先打电话确认&amp;预定&amp;付定金<br />2. 去餐厅吃饭</td>
+<td>T1单事务<br />    即使a,b没有锁,也要先确认在开始事务<br />T1&amp;T2并发<br />    T1先确认，开始事务给a,b上锁<br />    T2先确认无法获取锁，不开始事务，不需要回滚</td>
+<td>冲突少：锁确认过程有消耗<br />冲突多：避免不必要的回滚</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>🤔 悲观锁的情况下，T1(update a,b)持有a,b行锁，此时T2(update b,c)和T3(update b,a)同时过来。显然都无法获取需要的行b的锁，接下来是T2持有c行锁，T3等；还是T2&amp;T3排队等？是尽量先持有能持有的行锁，还是等能持有所有行的锁？</p>
+</blockquote>
+<p>5、T1/T3用不同的顺序更新相同的数据，会不会死锁？ </p>
+<p>​      死锁检测</p>
+<p>6、不同的隔离级别怎么实现？</p>
+<p>​      MVCC，从上面的流程我们看到了，一行记录的修改是会保留多个版本的。以可重复度的情况为例说明。在进行读操作的时候，如果需要的行有lock信息，说明这一行正在被改，根据start_ts找到最近一个已经提交的版本(write列中去找)，然后去到对应的(data列获取到数据)。</p>
+<p>7、版本清理问题</p>
+<p>​    锁清理：primary_lock锁超时，回滚。secondary_lock，如果primary_lock已经提交，那就提交，否则就回滚。如果primary_lock还在，那就是超时，超时回滚即可。</p>
+<p>​    GC清理：比如没10min清理一次，本次清理的触发操作就将10min之前的数据干掉，原则上保留最近10min的数据。不过得合理考虑下清理带来的抖动。小批多次理论上比较好设定，尽量减少每次操作的动静。对drop table或者truncate table优化下大量连续删除。</p>
+<p>8、</p>
+<p>​    同一个server    </p>
+<p>​    不同的server</p>
+<p>Q：锁信息，对比mysql单节点，多节点每个节点都有自己的锁信息，T1跨节点了，怎么知道a、b行分别的锁信息</p>
+<p>Q：锁信息的统一管理，避免两阶段确认？</p>
+<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>原理图：先薅两张官网的图过来看看，乐观 VS 悲观</p>
+<p>Parser -&gt; Optimize -&gt; Executor</p>
+<p>Server/conn.go(Run) -&gt;  dispatch -&gt; handleQuery(Parse -&gt; )</p>
+<p>session -&gt; Compiler (Compile compiles an ast.StmtNode to a physical plan.) </p>
+<p>ExecuteStmt – 这里涉及到事务相关的内容了</p>
+<h4 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h4><p><strong>参考文档</strong></p>
+<p><a href="https://www.jianshu.com/p/bca8a678fafc">https://www.jianshu.com/p/bca8a678fafc</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/349445778">https://zhuanlan.zhihu.com/p/349445778</a></p>
+<p><a href="https://www.bilibili.com/video/BV1ox411R7EA?spm_id_from=333.999.0.0">https://www.bilibili.com/video/BV1ox411R7EA?spm_id_from=333.999.0.0</a></p>
+]]></content>
+      <tags>
+        <tag>分布式事务</tag>
+        <tag>tidb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hashicorp-raft源码系列-4-leader逻辑</title>
+    <url>/2021/12/20/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-4-leader%E9%80%BB%E8%BE%91/</url>
+    <content><![CDATA[<p>前面三篇我们分别介绍了Raft的API、网络层、存储层，从这一篇开始我们来看Raft的<code>Leader、Candidate、Follower</code>实现。</p>
+<h4 id="r-runLeader逻辑"><a href="#r-runLeader逻辑" class="headerlink" title="r.runLeader逻辑"></a>r.runLeader逻辑</h4><p>事务提交的过程：接着我们一点点分析，</p>
+<h5 id="发送请求，Apply方法"><a href="#发送请求，Apply方法" class="headerlink" title="发送请求，Apply方法"></a>发送请求，Apply方法</h5><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Apply</span></span><br><span class="line"><span class="comment">//  -&gt; ApplyLog</span></span><br><span class="line"><span class="comment">// 写的时候也不需要返回什么，主要就是Check Error</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">ApplyLog</span><span class="params">(log Log, timeout time.Duration)</span> <span class="title">ApplyFuture</span></span> &#123;</span><br><span class="line">  logFuture := &amp;logFuture&#123;</span><br><span class="line">    log: Log&#123;</span><br><span class="line">      Type:       LogCommand,</span><br><span class="line">      Data:       log.Data,</span><br><span class="line">      Extensions: log.Extensions,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;</span><br><span class="line">  logFuture.init()</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  ...</span><br><span class="line">  <span class="comment">// 这个写法很有意思，到底是什么意思呢？放到applyCh马上返回，这个时候return logFuture不一定有数据的吧，client怎么判断操作是成功还是失败呢。</span></span><br><span class="line">  <span class="keyword">case</span> r.applyCh &lt;- logFuture:</span><br><span class="line">    <span class="keyword">return</span> logFuture</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>至此，我们就将Raft节点启动起来了</p>
-<h4 id="技术点1：atomic-Value"><a href="#技术点1：atomic-Value" class="headerlink" title="技术点1：atomic.Value"></a>技术点1：atomic.Value</h4><p><img src="https://blog.betacat.io/image/golang-atomic-value/atomic-value-store.drawio.png" alt="atomic.Value Store 流程"></p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// conf这个变量会涉及到多个goroutine的并发修改&amp;读取。</span></span><br><span class="line"><span class="comment">// 为了保证读写的原子性，通常我们会加锁。但是加锁又有点过重了，为了更加高效的实现，使用了atomic。</span></span><br><span class="line">conf atomic.Value</span><br><span class="line">r.conf.Store(*conf)</span><br></pre></td></tr></table></figure>
+<h5 id="runLeader"><a href="#runLeader" class="headerlink" title="runLeader()"></a>runLeader()</h5><p>接着我们看下leader初始化的时候会干些啥，重点看下初始化的后台处理协程。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">runLeader</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="comment">// ?? leaderCh这个chan还真的是不知道干啥的，后面有时间在重点看下</span></span><br><span class="line">  overrideNotifyBool(r.leaderCh, <span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// setup leader state，主要是节点的信息</span></span><br><span class="line">  r.setupLeaderState()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 定义清理逻辑</span></span><br><span class="line">  <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">   ...</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 重点：为每一个peer启动一个Log复制协程，</span></span><br><span class="line">  r.startStopReplication()</span><br><span class="line">  <span class="comment">//  调用-&gt; r.goFunc(func() &#123; r.replicate(s) &#125;)</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 开始leader循环</span></span><br><span class="line">  r.leaderLoop()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 8个写routine + 1个读routine</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">TestAtomic</span><span class="params">(t *testing.T)</span></span> &#123;</span><br><span class="line">  <span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line">  <span class="keyword">var</span> gloMy = my&#123;&#125;</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">8</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      wg.Add(<span class="number">1</span>)</span><br><span class="line">      <span class="keyword">for</span> &#123;</span><br><span class="line">        tmp := rand.Uint64() % <span class="number">100</span></span><br><span class="line">        gloMy.v1 = tmp</span><br><span class="line">        <span class="comment">// 在这两次操作之间就会产生中间状态，这个状态就很奇怪没有意义</span></span><br><span class="line">        gloMy.v2 = fmt.Sprintf(<span class="string">&quot;s%d&quot;</span>, tmp)</span><br><span class="line">      &#125;</span><br><span class="line">      wg.Done()</span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  wg.Add(<span class="number">1</span>)</span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">      t.Log(gloMy.v1, gloMy.v2)</span><br><span class="line">    &#125;</span><br><span class="line">    wg.Done()</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  wg.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">=== RUN   TestAtomic</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">75</span> s64 <span class="comment">// 不合符预期，脏读了</span></span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">63</span> s63</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">48</span> s48</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">5</span> s5</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">1</span> s1</span><br></pre></td></tr></table></figure>
+<h5 id="Leader消费r-applyCh"><a href="#Leader消费r-applyCh" class="headerlink" title="Leader消费r.applyCh"></a>Leader消费r.applyCh</h5><p>将客户端的写凑成一批，</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">case</span> newLog := &lt;-r.applyCh:</span><br><span class="line">  <span class="comment">// Group commit, 组提交</span></span><br><span class="line">  ready := []*logFuture&#123;newLog&#125;</span><br><span class="line">GROUP_COMMIT_LOOP:</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; r.config().MaxAppendEntries; i++ &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> newLog := &lt;-r.applyCh:</span><br><span class="line">      ready = <span class="built_in">append</span>(ready, newLog)</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">break</span> GROUP_COMMIT_LOOP</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Dispatch the logs</span></span><br><span class="line">  <span class="keyword">if</span> stepDown &#123;</span><br><span class="line">     ....</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    r.dispatchLogs(ready)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 
-<p><a href="https://blog.betacat.io/post/golang-atomic-value-exploration/">推荐一篇文章</a> ：文中将atomic的来龙去脉都解释了一遍。</p>
-<h4 id="技术点2：队头阻塞"><a href="#技术点2：队头阻塞" class="headerlink" title="技术点2：队头阻塞"></a>技术点2：队头阻塞</h4><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 这行的位置，在goroutine启动之前注册HeartbeatHandler处理器</span></span><br><span class="line">trans.SetHeartbeatHandler(r.processHeartbeat)</span><br></pre></td></tr></table></figure>
+<p>接着看看dispatchLogs逻辑</p>
+<p>加r.leaderState.inflight list, 表示需要处理的applyLogs</p>
+<p>日志持久化 r.logs.StoreLogs(logs)，类比mysql 持久化redo log</p>
+<p>将自己的log index往前，并且通知<code>commitCh</code></p>
+<p>持久化lastIndex，r.setLastLog(lastIndex, term)</p>
+<p>通知每个replication新Log –  asyncNotifyCh(f.triggerCh)  </p>
+<p>接着就是上面的初始化的时候干的事情了，给每个channel发消息</p>
+<p>想想哪些是异步的？为啥要异步处理呢？</p>
+<p>搞清楚重点</p>
+<p>下面的<code>observe</code>是干啥的？</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">r.observe(LeaderObservation&#123;Leader: leader&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>client 写请求 :api.go   Apply方法，返回一个ApplyFuture对象，包含req、response、error</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
 
 
-<h4 id="小小疑问❓"><a href="#小小疑问❓" class="headerlink" title="小小疑问❓"></a>小小疑问❓</h4><p>Q: 为啥要叫FSM，我的理解FSM不就是类似于MySQL这种可以应用Log的地方吗？总感觉用状态机命名怪怪的，容易误会。</p>
-<p>Q: Config 和 Configuration的区别? Config里面都是单个Raft节点的配置，比如超时之类的；Configuration是Raft Cluster相关的信息，比如有几个节点之类的。</p>
-<p>​           </p>
+<p>–&gt;  发消息 append entity –&gt; 多数派的回复  – &gt; 客户端返回  –&gt; 应用FSM(另一个流程)–&gt; 通知其他节点可以应用 –</p>
+<p>client返回的标准是啥？日志多数派 or  Master apply成功(不可能)   </p>
+<p>认真琢磨其中的优化</p>
+<h4 id="问题记录"><a href="#问题记录" class="headerlink" title="问题记录"></a>问题记录</h4><p>1、chan里面只有一个元素，并且不能并发调用。下面代码的理解，到底是怎么避免并发调用的？还有别的实现吗？这个实现是不是有点trick？</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">overrideNotifyBool</span><span class="params">(ch <span class="keyword">chan</span> <span class="keyword">bool</span>, v <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  <span class="keyword">case</span> ch &lt;- v:</span><br><span class="line">    <span class="comment">// value sent, all done</span></span><br><span class="line">  <span class="keyword">case</span> &lt;-ch:</span><br><span class="line">    <span class="comment">// channel had an old value</span></span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> ch &lt;- v:</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">&quot;race: channel was sent concurrently&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2、<code>leaderLoop</code>这个里面全是异步的chan，代码规划的非常好，很值得学习</p>
 ]]></content>
       <tags>
         <tag>raft</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hashicorp:raft源码系列(3)--存储层</title>
+    <url>/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-3-%E5%AD%98%E5%82%A8%E5%B1%82/</url>
+    <content><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>接着上一篇我们讲了网络层，接下来我们来讲<code>LogStore、StableStore、FSM、SnapshotStore</code>，为啥这些一起讲呢，因为这些都是存储相关，并且功能相对简单，并没有像<code>Transport</code>那样有<code>NetworkTransport</code>实现可以用来进行分析。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">func</span> <span class="title">NewRaft</span><span class="params">(conf *Config, fsm FSM, logs LogStore, stable StableStore, snaps SnapshotStore, trans Transport)</span> <span class="params">(*Raft, error)</span></span> &#123;     	......&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="StableStore"><a href="#StableStore" class="headerlink" title="StableStore"></a>StableStore</h4><p>这个组件主要就是为了安全考虑而存在的，提供一个可以持久化k-v的存储的即可。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> StableStore <span class="keyword">interface</span> &#123;</span><br><span class="line">  Set(key []<span class="keyword">byte</span>, val []<span class="keyword">byte</span>) error</span><br><span class="line">  Get(key []<span class="keyword">byte</span>) ([]<span class="keyword">byte</span>, error)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// uint64是日志号和任期定义的类型，方便存</span></span><br><span class="line">  SetUint64(key []<span class="keyword">byte</span>, val <span class="keyword">uint64</span>) error</span><br><span class="line">  GetUint64(key []<span class="keyword">byte</span>) (<span class="keyword">uint64</span>, error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="LogStore"><a href="#LogStore" class="headerlink" title="LogStore"></a>LogStore</h4><p>这个组件就是为了存日志的，比如用户发过来<code>set a=1</code>, 将这个存起来即可。和上面的<code>StableStore</code>能力是同一种，不过日志可能比较多，需要根据实现情况进行选择。项目在测试的时候实现了一个<code>inmem</code>的日志存储，用了一个<code>map</code>来进行存储。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// inmem模拟，直接map存，基本能力-读写。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewInmemStore</span><span class="params">()</span> *<span class="title">InmemStore</span></span> &#123;</span><br><span class="line">  i := &amp;InmemStore&#123;</span><br><span class="line">    logs:  <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">uint64</span>]*Log),</span><br><span class="line">    kv:    <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>][]<span class="keyword">byte</span>),</span><br><span class="line">    kvInt: <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">uint64</span>),</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> i</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="FSM"><a href="#FSM" class="headerlink" title="FSM"></a>FSM</h4><p>FMS的功能，②+③不是Raft的核心逻辑。Raft启动时候会有一个后台协程<code>runFSM</code>负责来做下面的三件事，Main线程将应用日志请求放到<code>fsmMutateCh</code>里面，将打快照的请求放到<code>fsmSnapshotCh</code>里面，不阻塞Main</p>
+<p>① 应用日志，raft log多数派已经确认，就可以应用到底层存储了。</p>
+<p>② 快照</p>
+<p>③ 节点恢复</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> FSM <span class="keyword">interface</span> &#123;</span><br><span class="line">  Apply(*Log) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">  Snapshot() (FSMSnapshot, error)</span><br><span class="line">  Restore(io.ReadCloser) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">runFSM</span><span class="params">()</span></span> &#123;</span><br><span class="line">  commitSingle := <span class="function"><span class="keyword">func</span><span class="params">(req *commitTuple)</span></span>&#123;...&#125;</span><br><span class="line">  commitBatch := <span class="function"><span class="keyword">func</span><span class="params">(reqs []*commitTuple)</span></span>&#123;...&#125;</span><br><span class="line">  restore := <span class="function"><span class="keyword">func</span><span class="params">(req *restoreFuture)</span></span>&#123;...&#125;</span><br><span class="line">  snapshot := <span class="function"><span class="keyword">func</span><span class="params">(req *reqSnapshotFuture)</span></span>&#123;...&#125;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> ptr := &lt;-r.fsmMutateCh:</span><br><span class="line">      <span class="keyword">switch</span> req := ptr.(<span class="keyword">type</span>) &#123;</span><br><span class="line">      <span class="keyword">case</span> []*commitTuple:</span><br><span class="line">        commitBatch(req)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">case</span> *restoreFuture:</span><br><span class="line">        restore(req)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">default</span>:</span><br><span class="line">        <span class="built_in">panic</span>(fmt.Errorf(<span class="string">&quot;bad type passed to fsmMutateCh: %#v&quot;</span>, ptr))</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> req := &lt;-r.fsmSnapshotCh:</span><br><span class="line">      snapshot(req)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> &lt;-r.shutdownCh:</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>snapshot不是重点，所以先简单介绍下，后续重读的时候补上这一模块。下一篇我们来看最重要的Raft的逻辑。</p>
+]]></content>
+      <tags>
+        <tag>raft</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>blog折腾记录</title>
+    <url>/2021/12/17/blog%E9%83%A8%E7%BD%B2%E7%AF%87/</url>
+    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>最近开始重拾写blog的习惯，想着坚持点啥吧。</p>
+<p>结果将github上的网站打开，2020-03最近一篇，现在可是2021-12月了，搁置了1年9个月，真行。</p>
+<p>然后打算上传一篇blog，发现新电脑上环境也没有了。大脑开始告诉运转，好吧~ 完全没有一点映像。</p>
+<p>因此，打算乖乖的写文章记录，好记性不如烂笔头，先人们不曾欺我啊~</p>
+<h4 id="操作记录"><a href="#操作记录" class="headerlink" title="操作记录"></a>操作记录</h4><p>之前还折腾什么mweb，一键部署多个平台啥的。现在可能是思想观念变了，内容平台还是以内容为主。既然都花了那么多心思写了，难道还不能去各个平台溜达一圈部署下。</p>
+<h5 id="用什么写？"><a href="#用什么写？" class="headerlink" title="用什么写？"></a>用什么写？</h5><blockquote>
+<p>Typero</p>
+</blockquote>
+<h5 id="用什么图床？"><a href="#用什么图床？" class="headerlink" title="用什么图床？"></a>用什么图床？</h5><blockquote>
+<p> 路过图床。就是觉得剪贴板直接ctrl+v很方便，懒得换。</p>
+</blockquote>
+<h5 id="发布到哪"><a href="#发布到哪" class="headerlink" title="发布到哪"></a>发布到哪</h5><p>原则就是支持MD导入</p>
+<ul>
+<li>github，可以去百度智能云上去申请一个域名，便宜的一年就13元，不过续费比较贵☺️。</li>
+<li>csdn</li>
+<li>cnblog(不支持MD导入，有点愁人)</li>
+<li>简书(不支持MD导入，放弃)</li>
+</ul>
+<h5 id="hexo与github配置"><a href="#hexo与github配置" class="headerlink" title="hexo与github配置"></a>hexo与github配置</h5><p>说起来我之前弄过一版，但是完成忘记了。更惨的是git仓库的东西都不知道怎么复用，只能完全重来，就当是一个新的开始好了。</p>
+<p>先将一次性的操作做了，安装&amp;配置。配置文件只有2个，一定要做好备份</p>
+<p>_config.yml: 网站配置</p>
+<p>themes/next/_config.yml：主题配置</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> mac上安装hexo</span></span><br><span class="line">brew install hexo</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 初始化项目</span></span><br><span class="line">hexo init myblog</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> git <span class="built_in">clone</span> next主题</span></span><br><span class="line">git clone https://github.com/theme-next/hexo-theme-next themes/next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制化配置 _config.yml</span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># site： 这力的language要和主题里面的themes/next/languages下面的文件能对应才行</span></span></span><br><span class="line">title: Moonshine&#x27;s Blog</span><br><span class="line">subtitle: &#x27;日拱一卒无有尽，功不唐捐终入海&#x27;</span><br><span class="line">description: &#x27;風が吹いて葉が落ち、落ち葉は土壌の肥やしとなり土壌を肥えさせ、果物がゆっくりと着実に育つのです&#x27;</span><br><span class="line">keywords: &#x27;数据库&#x27;</span><br><span class="line">author: Moonshine</span><br><span class="line">language: zh-CN</span><br><span class="line">timezone: &#x27;&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># url</span></span></span><br><span class="line">url: https://zhangtinglu.github.io/</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 主题</span></span></span><br><span class="line">theme: next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 部署git</span></span></span><br><span class="line">deploy:</span><br><span class="line">  type: &#x27;git&#x27;</span><br><span class="line">  repo: &#x27;https://github.com/zhangtinglu/zhangtinglu.github.io&#x27;</span><br><span class="line">  branch: &#x27;master&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 代码语法高亮，将prismjs改成true就行了</span></span></span><br><span class="line">prismjs:</span><br><span class="line">  enable: true </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制theme配置 themes/next/_config.yml -- 有点多，直接备份吧</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 把自己需要的需要的page安装下</span></span><br><span class="line">hexo new page about</span><br><span class="line">hexo new page tags</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 首页摘要 -- 太费劲了，直接用归档页面当成主页</span></span><br><span class="line">~/myblog/themes/next/layout </span><br><span class="line">mv index.swig index_bak.swig</span><br><span class="line">cp archive.swig index.swig</span><br><span class="line"><span class="meta">#</span><span class="bash"> 代码可折叠 - 收缩</span></span><br><span class="line">codeblock:</span><br><span class="line">  highlight_theme: night</span><br><span class="line"><span class="meta">#</span><span class="bash"> 显得太大了 -- 不管能看就行</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 文章目录</span></span><br><span class="line">toc:</span><br><span class="line">  expand_all: true</span><br></pre></td></tr></table></figure>
+
+<p>接着就是平常使用了，创建blog-deploy</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先将hello world这个page删除</span></span><br><span class="line">rm -rf /source/_posts/hello-world.md</span><br><span class="line">hexo new &#x27;blog&#x27;</span><br><span class="line">hexo s</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure>
+
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>真的前端做到最后，觉得会疯，太容易产生强迫症了。</p>
+]]></content>
+      <tags>
+        <tag>hexo配置</tag>
       </tags>
   </entry>
   <entry>
@@ -176,456 +625,68 @@
       </tags>
   </entry>
   <entry>
-    <title>hashicorp:raft源码系列(3)--存储层</title>
-    <url>/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-3-%E5%AD%98%E5%82%A8%E5%B1%82/</url>
-    <content><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>接着上一篇我们讲了网络层，接下来我们来讲<code>LogStore、StableStore、FSM、SnapshotStore</code>，为啥这些一起讲呢，因为这些都是存储相关，并且功能相对简单，并没有像<code>Transport</code>那样有<code>NetworkTransport</code>实现可以用来进行分析。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">func</span> <span class="title">NewRaft</span><span class="params">(conf *Config, fsm FSM, logs LogStore, stable StableStore, snaps SnapshotStore, trans Transport)</span> <span class="params">(*Raft, error)</span></span> &#123;     	......&#125;</span><br></pre></td></tr></table></figure>
+    <title>hashicorp:raft源码系列(1)--导读</title>
+    <url>/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-1-%E5%AF%BC%E8%AF%BB/</url>
+    <content><![CDATA[<h3 id="Raft是干啥的？"><a href="#Raft是干啥的？" class="headerlink" title="Raft是干啥的？"></a>Raft是干啥的？</h3><p><a href="http://thesecretlivesofdata.com/raft/">动画说明</a></p>
+<p>简述如下图：用户SET 5，3个不同节点都能获取SET 5的操作。所谓的最简单的分布式一致性。</p>
+<p><a href="https://imgtu.com/i/oO3r0P"><img src="https://s4.ax1x.com/2021/12/13/oO3r0P.png" alt="oO3r0P.png"></a></p>
+<h3 id="Raft项目包含哪些模块？"><a href="#Raft项目包含哪些模块？" class="headerlink" title="Raft项目包含哪些模块？"></a>Raft项目包含哪些模块？</h3><h4 id="项目有多少行"><a href="#项目有多少行" class="headerlink" title="项目有多少行?"></a>项目有多少行?</h4><p>分析下整个项目大概是1W多行，并不是很大，代码注释非常齐全，理解起来比较轻松。代码抽象得很好，非常值得学习。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">-&gt;</span><span class="bash"> % cloc ./</span></span><br><span class="line">      77 text files.</span><br><span class="line">      77 unique files.</span><br><span class="line">       8 files ignored.</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 1.90  T=0.09 s (814.1 files/s, 201614.7 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Go                              57           2207           2786          11864</span><br><span class="line">Markdown                         4            106              0            255</span><br><span class="line">YAML                             4             26             29            141</span><br><span class="line">XML                              4              0              0            108</span><br><span class="line">make                             1             10              2             33</span><br><span class="line">Bourne Shell                     1              3              3             10</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                            71           2352           2820          12411</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
 
-<h4 id="StableStore"><a href="#StableStore" class="headerlink" title="StableStore"></a>StableStore</h4><p>这个组件主要就是为了安全考虑而存在的，提供一个可以持久化k-v的存储的即可。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> StableStore <span class="keyword">interface</span> &#123;</span><br><span class="line">  Set(key []<span class="keyword">byte</span>, val []<span class="keyword">byte</span>) error</span><br><span class="line">  Get(key []<span class="keyword">byte</span>) ([]<span class="keyword">byte</span>, error)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// uint64是日志号和任期定义的类型，方便存</span></span><br><span class="line">  SetUint64(key []<span class="keyword">byte</span>, val <span class="keyword">uint64</span>) error</span><br><span class="line">  GetUint64(key []<span class="keyword">byte</span>) (<span class="keyword">uint64</span>, error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<h4 id="LogStore"><a href="#LogStore" class="headerlink" title="LogStore"></a>LogStore</h4><p>这个组件就是为了存日志的，比如用户发过来<code>set a=1</code>, 将这个存起来即可。和上面的<code>StableStore</code>能力是同一种，不过日志可能比较多，需要根据实现情况进行选择。项目在测试的时候实现了一个<code>inmem</code>的日志存储，用了一个<code>map</code>来进行存储。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// inmem模拟，直接map存，基本能力-读写。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewInmemStore</span><span class="params">()</span> *<span class="title">InmemStore</span></span> &#123;</span><br><span class="line">  i := &amp;InmemStore&#123;</span><br><span class="line">    logs:  <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">uint64</span>]*Log),</span><br><span class="line">    kv:    <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>][]<span class="keyword">byte</span>),</span><br><span class="line">    kvInt: <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">uint64</span>),</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> i</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<h4 id="FSM"><a href="#FSM" class="headerlink" title="FSM"></a>FSM</h4><p>FMS的功能，②+③不是Raft的核心逻辑。Raft启动时候会有一个后台协程<code>runFSM</code>负责来做下面的三件事，Main线程将应用日志请求放到<code>fsmMutateCh</code>里面，将打快照的请求放到<code>fsmSnapshotCh</code>里面，不阻塞Main</p>
-<p>① 应用日志，raft log多数派已经确认，就可以应用到底层存储了。</p>
-<p>② 快照</p>
-<p>③ 节点恢复</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> FSM <span class="keyword">interface</span> &#123;</span><br><span class="line">  Apply(*Log) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">  Snapshot() (FSMSnapshot, error)</span><br><span class="line">  Restore(io.ReadCloser) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">runFSM</span><span class="params">()</span></span> &#123;</span><br><span class="line">  commitSingle := <span class="function"><span class="keyword">func</span><span class="params">(req *commitTuple)</span></span>&#123;...&#125;</span><br><span class="line">  commitBatch := <span class="function"><span class="keyword">func</span><span class="params">(reqs []*commitTuple)</span></span>&#123;...&#125;</span><br><span class="line">  restore := <span class="function"><span class="keyword">func</span><span class="params">(req *restoreFuture)</span></span>&#123;...&#125;</span><br><span class="line">  snapshot := <span class="function"><span class="keyword">func</span><span class="params">(req *reqSnapshotFuture)</span></span>&#123;...&#125;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> ptr := &lt;-r.fsmMutateCh:</span><br><span class="line">      <span class="keyword">switch</span> req := ptr.(<span class="keyword">type</span>) &#123;</span><br><span class="line">      <span class="keyword">case</span> []*commitTuple:</span><br><span class="line">        commitBatch(req)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">case</span> *restoreFuture:</span><br><span class="line">        restore(req)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">default</span>:</span><br><span class="line">        <span class="built_in">panic</span>(fmt.Errorf(<span class="string">&quot;bad type passed to fsmMutateCh: %#v&quot;</span>, ptr))</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> req := &lt;-r.fsmSnapshotCh:</span><br><span class="line">      snapshot(req)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> &lt;-r.shutdownCh:</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>snapshot不是重点，所以先简单介绍下，后续重读的时候补上这一模块。下一篇我们来看最重要的Raft的逻辑。</p>
-]]></content>
-      <tags>
-        <tag>raft</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>hashicorp-raft源码系列-4-leader逻辑</title>
-    <url>/2021/12/20/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-4-leader%E9%80%BB%E8%BE%91/</url>
-    <content><![CDATA[<p>前面三篇我们分别介绍了Raft的API、网络层、存储层，从这一篇开始我们来看Raft的<code>Leader、Candidate、Follower</code>实现。</p>
-<h4 id="r-runLeader逻辑"><a href="#r-runLeader逻辑" class="headerlink" title="r.runLeader逻辑"></a>r.runLeader逻辑</h4><p>事务提交的过程：接着我们一点点分析，</p>
-<h5 id="发送请求，Apply方法"><a href="#发送请求，Apply方法" class="headerlink" title="发送请求，Apply方法"></a>发送请求，Apply方法</h5><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Apply</span></span><br><span class="line"><span class="comment">//  -&gt; ApplyLog</span></span><br><span class="line"><span class="comment">// 写的时候也不需要返回什么，主要就是Check Error</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">ApplyLog</span><span class="params">(log Log, timeout time.Duration)</span> <span class="title">ApplyFuture</span></span> &#123;</span><br><span class="line">  logFuture := &amp;logFuture&#123;</span><br><span class="line">    log: Log&#123;</span><br><span class="line">      Type:       LogCommand,</span><br><span class="line">      Data:       log.Data,</span><br><span class="line">      Extensions: log.Extensions,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;</span><br><span class="line">  logFuture.init()</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  ...</span><br><span class="line">  <span class="comment">// 这个写法很有意思，到底是什么意思呢？放到applyCh马上返回，这个时候return logFuture不一定有数据的吧，client怎么判断操作是成功还是失败呢。</span></span><br><span class="line">  <span class="keyword">case</span> r.applyCh &lt;- logFuture:</span><br><span class="line">    <span class="keyword">return</span> logFuture</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="runLeader"><a href="#runLeader" class="headerlink" title="runLeader()"></a>runLeader()</h5><p>接着我们看下leader初始化的时候会干些啥，重点看下初始化的后台处理协程。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">runLeader</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="comment">// ?? leaderCh这个chan还真的是不知道干啥的，后面有时间在重点看下</span></span><br><span class="line">  overrideNotifyBool(r.leaderCh, <span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// setup leader state，主要是节点的信息</span></span><br><span class="line">  r.setupLeaderState()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 定义清理逻辑</span></span><br><span class="line">  <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">   ...</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 重点：为每一个peer启动一个Log复制协程，</span></span><br><span class="line">  r.startStopReplication()</span><br><span class="line">  <span class="comment">//  调用-&gt; r.goFunc(func() &#123; r.replicate(s) &#125;)</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 开始leader循环</span></span><br><span class="line">  r.leaderLoop()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="Leader消费r-applyCh"><a href="#Leader消费r-applyCh" class="headerlink" title="Leader消费r.applyCh"></a>Leader消费r.applyCh</h5><p>将客户端的写凑成一批，</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">case</span> newLog := &lt;-r.applyCh:</span><br><span class="line">  <span class="comment">// Group commit, 组提交</span></span><br><span class="line">  ready := []*logFuture&#123;newLog&#125;</span><br><span class="line">GROUP_COMMIT_LOOP:</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; r.config().MaxAppendEntries; i++ &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> newLog := &lt;-r.applyCh:</span><br><span class="line">      ready = <span class="built_in">append</span>(ready, newLog)</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">break</span> GROUP_COMMIT_LOOP</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Dispatch the logs</span></span><br><span class="line">  <span class="keyword">if</span> stepDown &#123;</span><br><span class="line">     ....</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    r.dispatchLogs(ready)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-
-<p>接着看看dispatchLogs逻辑</p>
-<p>加r.leaderState.inflight list, 表示需要处理的applyLogs</p>
-<p>日志持久化 r.logs.StoreLogs(logs)，类比mysql 持久化redo log</p>
-<p>将自己的log index往前，并且通知<code>commitCh</code></p>
-<p>持久化lastIndex，r.setLastLog(lastIndex, term)</p>
-<p>通知每个replication新Log –  asyncNotifyCh(f.triggerCh)  </p>
-<p>接着就是上面的初始化的时候干的事情了，给每个channel发消息</p>
-<p>想想哪些是异步的？为啥要异步处理呢？</p>
-<p>搞清楚重点</p>
-<p>下面的<code>observe</code>是干啥的？</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">r.observe(LeaderObservation&#123;Leader: leader&#125;)</span><br></pre></td></tr></table></figure>
-
-<p>client 写请求 :api.go   Apply方法，返回一个ApplyFuture对象，包含req、response、error</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-
-<p>–&gt;  发消息 append entity –&gt; 多数派的回复  – &gt; 客户端返回  –&gt; 应用FSM(另一个流程)–&gt; 通知其他节点可以应用 –</p>
-<p>client返回的标准是啥？日志多数派 or  Master apply成功(不可能)   </p>
-<p>认真琢磨其中的优化</p>
-<h4 id="问题记录"><a href="#问题记录" class="headerlink" title="问题记录"></a>问题记录</h4><p>1、chan里面只有一个元素，并且不能并发调用。下面代码的理解，到底是怎么避免并发调用的？还有别的实现吗？这个实现是不是有点trick？</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">overrideNotifyBool</span><span class="params">(ch <span class="keyword">chan</span> <span class="keyword">bool</span>, v <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  <span class="keyword">case</span> ch &lt;- v:</span><br><span class="line">    <span class="comment">// value sent, all done</span></span><br><span class="line">  <span class="keyword">case</span> &lt;-ch:</span><br><span class="line">    <span class="comment">// channel had an old value</span></span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> ch &lt;- v:</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">&quot;race: channel was sent concurrently&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>2、<code>leaderLoop</code>这个里面全是异步的chan，代码规划的非常好，很值得学习</p>
-]]></content>
-      <tags>
-        <tag>raft</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>归档库选择-mysql vs tidb vs clickhouse vs ob</title>
-    <url>/2021/12/23/%E5%BD%92%E6%A1%A3%E5%BA%93%E9%80%89%E6%8B%A9-mysql-vs-tidb-vs-clickhouse-vs-ob/</url>
-    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>我们希望将MySQL里面的冷数据归档出来，那就需要选择一个存储引擎来承接这部分数据。因此我们对目前市面上主流的存储进行对比：mysql innodb、mysql tokudb、tidb、ob、clickhouse</p>
-<h4 id="测试说明"><a href="#测试说明" class="headerlink" title="测试说明"></a>测试说明</h4><p><strong>物理机器</strong></p>
-<table>
-<thead>
-<tr>
-<th>机器</th>
-<th>OS</th>
-<th>CPU</th>
-<th>内存</th>
-<th>磁盘</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Host1</td>
-<td>CentOS Linux release 7.5.1804 (Core)</td>
-<td>40  Intel(R) Xeon(R) Silver 4114 CPU @ 2.20GHz</td>
-<td>187G</td>
-<td>nvme0n1 1.5T</td>
-</tr>
-<tr>
-<td>Host2</td>
-<td>CentOS Linux release 7.5.1804 (Core)</td>
-<td>48  Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz</td>
-<td>125G</td>
-<td>nvme0n1 1.5T</td>
-</tr>
-<tr>
-<td>Host3</td>
-<td>CentOS Linux release 7.5.1804 (Core)</td>
-<td>32  Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz</td>
-<td>125G</td>
-<td>nvme0n1 5.8T</td>
-</tr>
-</tbody></table>
-<p><strong>测试说明</strong></p>
-<p>内存配置：所有节点同意配置4GB</p>
-<p>CPU核数：4核</p>
-<p>写入数据：5个表，每个表1亿行数据</p>
-<p><strong>测试结论</strong></p>
-<table>
-<thead>
-<tr>
-<th align="left">存储</th>
-<th>写入时间</th>
-<th>存储量</th>
-<th>TP查询</th>
-<th>AP查询</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">mysql innodb</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td align="left">mysql tokudb</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td align="left">tidb</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td align="left">ob</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td align="left">clickhouse</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</tbody></table>
-]]></content>
-      <tags>
-        <tag>tidb</tag>
-        <tag>归档</tag>
-        <tag>mysql</tag>
-        <tag>ob</tag>
-        <tag>clickhouse</tag>
-        <tag>压缩率</tag>
-        <tag>性能</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>生活日记:初</title>
-    <url>/2021/12/26/%E7%94%9F%E6%B4%BB%E6%97%A5%E8%AE%B0-%E5%88%9D/</url>
-    <content><![CDATA[<h4 id="初"><a href="#初" class="headerlink" title="初"></a>初</h4><p>这个标题也是困扰我好久，先说说命名为初的原因。</p>
+<h4 id="从哪里开始？"><a href="#从哪里开始？" class="headerlink" title="从哪里开始？"></a>从哪里开始？</h4><p>首先，我们来看下<code>api.go/Raft</code>结构，表示的是一个Raft节点，最核心的数据结构。划分3大块</p>
 <ol>
-<li>第一写生活类的博客</li>
-<li>开始🤔思考想过什么样的生活</li>
-</ol>
-<p>不知不觉已在北京工作4年多了，晚上散步前突然想到以后想要生活在哪里的话题。</p>
-<p>想要去昆明生活，觉得昆明春城，四季如春。</p>
-<p>接着就开始考虑，攒够多少钱可以去呢，毕竟工作机会不多。</p>
-<p>如果以后有小孩了，小孩教育怎么办呢。</p>
-<p>是不是还得买房呢，还有我对昆明也不熟悉吧。</p>
-<p>看~ 这就是典型的中国人，我想但我并不敢，需要我操心的事情是在太多了。</p>
-<p>我现在生活在北京，这座城市我已经生活了4年多了，可是我想也许并没有那么了解它。</p>
-<p>与其将时间花在不知未来会如何的思考上，不如现在就开始简单而笨拙的记录，记录北京这座城，记录我在这座城市呆过的痕迹，直到离开。</p>
-<p>清河站离我现在住的地方是真的近，所以就先从这里着手吧~</p>
-]]></content>
-      <tags>
-        <tag>生活</tag>
-        <tag>北京</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>tidb事务模型</title>
-    <url>/2021/12/21/%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B-TiDB/</url>
-    <content><![CDATA[<p>之前的看raft源码分析的时候，去看了看<code>atomic.Value</code>的实现，之后就一直想着Tidb的事务的实现，因为实现的思路比较类似的。Tidb的分布式事务模型是基于Google的Percolator实现的。接着我们从原理、代码实现、以及优化三大块来详细看看。</p>
-<h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><h5 id="分布式事务模型要做什么？"><a href="#分布式事务模型要做什么？" class="headerlink" title="分布式事务模型要做什么？"></a>分布式事务模型要做什么？</h5><p><a href="https://imgtu.com/i/T8tPBj"><img src="https://s4.ax1x.com/2021/12/23/T8tPBj.md.png" alt="T8tPBj.md.png"></a></p>
-<p>图片来源：<a href="https://www.jianshu.com/p/bca8a678fafc">blog地址</a>  [如有问题，请联系删除]。3个事务并发写入，T1/T2更新同一个分片的相同行(b)。T1/T3以不同的顺序更新相同的行。</p>
-<h5 id="需要思考的问题有哪些？"><a href="#需要思考的问题有哪些？" class="headerlink" title="需要思考的问题有哪些？"></a>需要思考的问题有哪些？</h5><p>我们从事务的整个生命周期来详细考虑这个事情。</p>
-<p><strong>单事务</strong></p>
-<p>1、T1事务更新(a,b)两条记录，怎么知道记录在哪些分片上？</p>
-<p>2、T1事务同时更新了2个分片，怎么保证原子性，同时成功or失败？</p>
-<p>3、每一条记录又有3个副本，怎么保证多副本的同步？</p>
-<p><strong>并发事务</strong></p>
-<p>、T1/T2同时更新分片2，会不会有冲突？冲突检测怎么做？如果有冲突怎么办？  – 乐观事务 or  悲观事务</p>
-<p>5、T1/T3用不同的顺序更新相同的数据，会不会死锁？ – 死锁检测</p>
-<p>6、不同的隔离级别怎么实现？ – MVCC</p>
-<h5 id="基于Percolator的解决方案？"><a href="#基于Percolator的解决方案？" class="headerlink" title="基于Percolator的解决方案？"></a>基于Percolator的解决方案？</h5><p>先用<a href="http://notes.stephenholiday.com/Percolator.pdf">论文</a>中的例子来简单说明下整个流程：Bob-&gt;Joe转账$7的整个过程。bal表示的是列。</p>
-<p>1、初始状态，Bob在时刻5有$10，Joe在时刻5有$2。时刻5-&gt;时刻6没有任何操作，所有6的时候还是data@5的数据，如最后一列。</p>
-<p><a href="https://imgtu.com/i/TKxBkj"><img src="https://s4.ax1x.com/2021/12/21/TKxBkj.png" alt="TKxBkj.png"></a></p>
-<p>2、转账开始，Bob账号发生两个变化，时刻7先将Bob账户的lock字段(第3列)设置为primary，然后将data(第二列)进行更新，余额为$3。</p>
-<p><a href="https://imgtu.com/i/TKzZNj"><img src="https://s4.ax1x.com/2021/12/21/TKzZNj.png" alt="TKzZNj.png"></a></p>
-<p>3、Bob账户更新完成，开始更新Joe账户，Joe账户操作同Bob(注意还是时刻7，开始时间)，却别是获取的lock不是primary了，而是ref to primary(第三列)。例子中secondary行只有一行，实际可能是多行，row by row的做获取锁&amp;更新数据的操作。</p>
-<p><a href="https://imgtu.com/i/TMSiGR"><img src="https://s4.ax1x.com/2021/12/21/TMSiGR.png" alt="TMSiGR.png"></a></p>
-<p>4、接下来数据更新好了，进入到提交阶段。新的时刻8，将primary的锁信息删除，并将数据写入到bal:write列(第4列)，到这里事务就算是提交了。secondary行的提交是异步的。这个时候读Bob的账户看到的值就是$3。</p>
-<p><a href="https://imgtu.com/i/TMpNX6"><img src="https://s4.ax1x.com/2021/12/21/TMpNX6.png" alt="TMpNX6.png"></a></p>
-<p>5、最后更新Bob账户信息，操作同步4，删除锁&amp;添加时刻8的信息。如果是多行需要更新，也是row by row的去更新。</p>
-<p><a href="https://imgtu.com/i/TMC9Ig"><img src="https://s4.ax1x.com/2021/12/21/TMC9Ig.png" alt="TMC9Ig.png"></a></p>
-<p>看下事务相关的3列：</p>
-<p>c:lock : 锁信息，活跃事务。</p>
-<p>c:write ：提交事务。如果primary已经commit了，不管secondary有没有应用完，都是提交事务。</p>
-<p>c:data ： 存储的就是各个时刻的数据。</p>
-<p>接着我们来看看之前提出的问题怎么使用上面的模型一个个的解决掉。</p>
-<p>1、T1事务更新(a,b)两条记录，怎么知道记录在哪些分片上？</p>
-<p>​     从PD里面获取，这个不是事务提交的重点，后面可以研究下数据分布的策略。</p>
-<p>2、T1事务同时更新了2个分片，怎么保证原子性，同时成功or失败？</p>
-<p>​     2阶段提交，先prewrite，再commit，以primary:write作为事务提交的标准。</p>
+<li><p>NewRaft节点需要的信息：下图中标红点的，几大核心组成。下一篇我们从网络层开始详细分析。</p>
 <blockquote>
-<p>🤔: 为啥不直接全部加锁，要这样麻烦的使用2阶段？</p>
-<p>​      如果直接加锁，那在整个提交过程中都不可用。row by row的提交&amp;释放能部分优化性能。</p>
+<p>除了raftState，其他部分全是interface，模块抽象的很细致。</p>
 </blockquote>
-<blockquote>
-<p>🤔: 为啥要在prewrite阶段写数据，不在commit阶段写呢？</p>
-<p>​       以上面的情况为例，Joe账户在异步应用之前，版本7只有lock，没有data，必须得等到所有的行都异步的应用完了数据，才能给客户端返回，非常容易超时。</p>
-</blockquote>
-<blockquote>
-<p>🤔: 既然有2阶段，是不是马上想到了协调器？</p>
-<p>​      实际上percolator模型使用write列来弱化了这一点，在commit阶段并不需要通知所有row去commit，只需要完成primary row的更新即可。后面由异步的任务去实现。在prewrite阶段确实需要确保所有需要修改的行都顺利加锁并更新data。            </p>
-</blockquote>
-<blockquote>
-<p>🤔: 怎么获取ts？</p>
-<p>​      这里的时刻5、6、7是怎么去获取的，也就是原子钟。从PD去拿，那么很显然，并发高的时候这里就是瓶颈了。</p>
-</blockquote>
-<p> 3、每一条记录又有3个副本，怎么保证多副本的同步？</p>
-<p>​    TiDB使用Raft协议来在多数节点上同步数据，Raft协议的实现之前的blog已经分析了，详情请移步。</p>
-<p>4、T1/T2同时更新分片2，会不会有冲突？冲突检测怎么做？如果有冲突怎么办？ </p>
-<p>​    上面的流程中我们使用乐观锁来获取secondary锁，但是实际使用上冲突大的时候获取锁的概率低，这样很容易导致事务回滚。我们先来对比下乐观锁 VS 悲观锁</p>
-<table>
-<thead>
-<tr>
-<th>类型</th>
-<th>生活例子</th>
-<th>图例</th>
-<th>特征</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>乐观锁</td>
-<td>直接去餐厅去吃饭<br />1. 人多没地，在回来，白跑一趟<br />2. 人少有地直接吃了</td>
-<td>T1单事务<br />    a,b没有锁,可以直接加上<br />T1&amp;T2并发<br />    T1先来a,b上锁<br />    T2:b,e无法获取b的锁，回滚</td>
-<td>冲突少：性能高<br />冲突多：回滚代价大</td>
-</tr>
-<tr>
-<td>悲观锁</td>
-<td>1. 先打电话确认&amp;预定&amp;付定金<br />2. 去餐厅吃饭</td>
-<td>T1单事务<br />    即使a,b没有锁,也要先确认在开始事务<br />T1&amp;T2并发<br />    T1先确认，开始事务给a,b上锁<br />    T2先确认无法获取锁，不开始事务，不需要回滚</td>
-<td>冲突少：锁确认过程有消耗<br />冲突多：避免不必要的回滚</td>
-</tr>
-</tbody></table>
-<blockquote>
-<p>🤔 悲观锁的情况下，T1(update a,b)持有a,b行锁，此时T2(update b,c)和T3(update b,a)同时过来。显然都无法获取需要的行b的锁，接下来是T2持有c行锁，T3等；还是T2&amp;T3排队等？是尽量先持有能持有的行锁，还是等能持有所有行的锁？</p>
-</blockquote>
-<p>5、T1/T3用不同的顺序更新相同的数据，会不会死锁？ </p>
-<p>​      死锁检测</p>
-<p>6、不同的隔离级别怎么实现？</p>
-<p>​      MVCC，从上面的流程我们看到了，一行记录的修改是会保留多个版本的。以可重复度的情况为例说明。在进行读操作的时候，如果需要的行有lock信息，说明这一行正在被改，根据start_ts找到最近一个已经提交的版本(write列中去找)，然后去到对应的(data列获取到数据)。</p>
-<p>7、版本清理问题</p>
-<p>​    锁清理：primary_lock锁超时，回滚。secondary_lock，如果primary_lock已经提交，那就提交，否则就回滚。如果primary_lock还在，那就是超时，超时回滚即可。</p>
-<p>​    GC清理：比如没10min清理一次，本次清理的触发操作就将10min之前的数据干掉，原则上保留最近10min的数据。不过得合理考虑下清理带来的抖动。小批多次理论上比较好设定，尽量减少每次操作的动静。对drop table或者truncate table优化下大量连续删除。</p>
-<p>8、</p>
-<p>​    同一个server    </p>
-<p>​    不同的server</p>
-<p>Q：锁信息，对比mysql单节点，多节点每个节点都有自己的锁信息，T1跨节点了，怎么知道a、b行分别的锁信息</p>
-<p>Q：锁信息的统一管理，避免两阶段确认？</p>
-<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>原理图：先薅两张官网的图过来看看，乐观 VS 悲观</p>
-<p>Parser -&gt; Optimize -&gt; Executor</p>
-<p>Server/conn.go(Run) -&gt;  dispatch -&gt; handleQuery(Parse -&gt; )</p>
-<p>session -&gt; Compiler (Compile compiles an ast.StmtNode to a physical plan.) </p>
-<p>ExecuteStmt – 这里涉及到事务相关的内容了</p>
-<h4 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h4><p><strong>参考文档</strong></p>
-<p><a href="https://www.jianshu.com/p/bca8a678fafc">https://www.jianshu.com/p/bca8a678fafc</a></p>
-<p><a href="https://zhuanlan.zhihu.com/p/349445778">https://zhuanlan.zhihu.com/p/349445778</a></p>
-<p><a href="https://www.bilibili.com/video/BV1ox411R7EA?spm_id_from=333.999.0.0">https://www.bilibili.com/video/BV1ox411R7EA?spm_id_from=333.999.0.0</a></p>
-]]></content>
-      <tags>
-        <tag>分布式事务</tag>
-        <tag>tidb</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>blog折腾记录</title>
-    <url>/2021/12/17/blog%E9%83%A8%E7%BD%B2%E7%AF%87/</url>
-    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>最近开始重拾写blog的习惯，想着坚持点啥吧。</p>
-<p>结果将github上的网站打开，2020-03最近一篇，现在可是2021-12月了，搁置了1年9个月，真行。</p>
-<p>然后打算上传一篇blog，发现新电脑上环境也没有了。大脑开始告诉运转，好吧~ 完全没有一点映像。</p>
-<p>因此，打算乖乖的写文章记录，好记性不如烂笔头，先人们不曾欺我啊~</p>
-<h4 id="操作记录"><a href="#操作记录" class="headerlink" title="操作记录"></a>操作记录</h4><p>之前还折腾什么mweb，一键部署多个平台啥的。现在可能是思想观念变了，内容平台还是以内容为主。既然都花了那么多心思写了，难道还不能去各个平台溜达一圈部署下。</p>
-<h5 id="用什么写？"><a href="#用什么写？" class="headerlink" title="用什么写？"></a>用什么写？</h5><blockquote>
-<p>Typero</p>
-</blockquote>
-<h5 id="用什么图床？"><a href="#用什么图床？" class="headerlink" title="用什么图床？"></a>用什么图床？</h5><blockquote>
-<p> 路过图床。就是觉得剪贴板直接ctrl+v很方便，懒得换。</p>
-</blockquote>
-<h5 id="发布到哪"><a href="#发布到哪" class="headerlink" title="发布到哪"></a>发布到哪</h5><p>原则就是支持MD导入</p>
-<ul>
-<li>github，可以去百度智能云上去申请一个域名，便宜的一年就13元，不过续费比较贵☺️。</li>
-<li>csdn</li>
-<li>cnblog(不支持MD导入，有点愁人)</li>
-<li>简书(不支持MD导入，放弃)</li>
-</ul>
-<h5 id="hexo与github配置"><a href="#hexo与github配置" class="headerlink" title="hexo与github配置"></a>hexo与github配置</h5><p>说起来我之前弄过一版，但是完成忘记了。更惨的是git仓库的东西都不知道怎么复用，只能完全重来，就当是一个新的开始好了。</p>
-<p>先将一次性的操作做了，安装&amp;配置。配置文件只有2个，一定要做好备份</p>
-<p>_config.yml: 网站配置</p>
-<p>themes/next/_config.yml：主题配置</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> mac上安装hexo</span></span><br><span class="line">brew install hexo</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 初始化项目</span></span><br><span class="line">hexo init myblog</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> git <span class="built_in">clone</span> next主题</span></span><br><span class="line">git clone https://github.com/theme-next/hexo-theme-next themes/next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制化配置 _config.yml</span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># site： 这力的language要和主题里面的themes/next/languages下面的文件能对应才行</span></span></span><br><span class="line">title: Moonshine&#x27;s Blog</span><br><span class="line">subtitle: &#x27;日拱一卒无有尽，功不唐捐终入海&#x27;</span><br><span class="line">description: &#x27;風が吹いて葉が落ち、落ち葉は土壌の肥やしとなり土壌を肥えさせ、果物がゆっくりと着実に育つのです&#x27;</span><br><span class="line">keywords: &#x27;数据库&#x27;</span><br><span class="line">author: Moonshine</span><br><span class="line">language: zh-CN</span><br><span class="line">timezone: &#x27;&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># url</span></span></span><br><span class="line">url: https://zhangtinglu.github.io/</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 主题</span></span></span><br><span class="line">theme: next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 部署git</span></span></span><br><span class="line">deploy:</span><br><span class="line">  type: &#x27;git&#x27;</span><br><span class="line">  repo: &#x27;https://github.com/zhangtinglu/zhangtinglu.github.io&#x27;</span><br><span class="line">  branch: &#x27;master&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 代码语法高亮，将prismjs改成true就行了</span></span></span><br><span class="line">prismjs:</span><br><span class="line">  enable: true </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制theme配置 themes/next/_config.yml -- 有点多，直接备份吧</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 把自己需要的需要的page安装下</span></span><br><span class="line">hexo new page about</span><br><span class="line">hexo new page tags</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 首页摘要 -- 太费劲了，直接用归档页面当成主页</span></span><br><span class="line">~/myblog/themes/next/layout </span><br><span class="line">mv index.swig index_bak.swig</span><br><span class="line">cp archive.swig index.swig</span><br><span class="line"><span class="meta">#</span><span class="bash"> 代码可折叠 - 收缩</span></span><br><span class="line">codeblock:</span><br><span class="line">  highlight_theme: night</span><br><span class="line"><span class="meta">#</span><span class="bash"> 显得太大了 -- 不管能看就行</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 文章目录</span></span><br><span class="line">toc:</span><br><span class="line">  expand_all: true</span><br></pre></td></tr></table></figure>
-
-<p>接着就是平常使用了，创建blog-deploy</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先将hello world这个page删除</span></span><br><span class="line">rm -rf /source/_posts/hello-world.md</span><br><span class="line">hexo new &#x27;blog&#x27;</span><br><span class="line">hexo s</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure>
-
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>真的前端做到最后，觉得会疯，太容易产生强迫症了。</p>
-]]></content>
-      <tags>
-        <tag>hexo配置</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Typora写blog中粘贴图片自动上传图床</title>
-    <url>/2021/12/24/blog%E5%9B%BE%E5%BA%8A%E7%AF%87/</url>
-    <content><![CDATA[<h4 id="Goal"><a href="#Goal" class="headerlink" title="Goal"></a>Goal</h4><p>我电脑上 cmd + trl + a(微信截图) -&gt; 来到Typora(cmd + v) 粘贴。</p>
-<p>然后就自动帮我上传图床，并且替换成图床照片吧，这样我也不需要切换到图床上去捣鼓了，就专注在Typora上去打字。</p>
-<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>图床：<a href="https://blog.svend.cc/upic/tutorials/github/">github</a>、<a href="https://blog.svend.cc/upic/tutorials/gitee/">gitee</a>，我自己比较常用的是路过图床，但是uPic不会配置，那就算啦，佛系找个能成功的。</p>
-<blockquote>
-<p>采坑：github图片可以正常上传，但是展示出来</p>
-</blockquote>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225084632762.png" alt="image-20211225084632762" style="zoom:30%;float:left" />
-
-<p>因此，我们还好折腾Gitee配置。</p>
-<ol>
-<li><p>创建仓库</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225085435762.png" alt="image-20211225085435762" style="zoom:25%;float:left" />
-
-<ol start="2">
-<li>生成私人令牌</li>
-</ol>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225083650340.png" alt="image-20211225083650340" style="zoom:25%;float:left" />
-
-<ol start="3">
-<li><p>配置uPic</p>
-<p>uPic直接github上下载了安装好，然后按照下面的方法配置</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090108133.png" alt="image-20211225090108133" style="zoom:25%;float:left" /></li>
-<li><p>配置Typora</p>
-<p>cmd+,打开软件偏好设置,成功了之后就在写blog的时候直接截图+粘贴吧，巴斯的很~</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090323825.png" alt="image-20211225090323825" style="zoom:25%;float:left" /></li>
-</ol>
+</li>
+<li><p>Leader操作相关：整个Raft最核心的就是Leader的状态转换过程。我们后续也会对这一部分的实现做详细说明。</p>
+</li>
+<li><p>一些异步操作：这一块是嵌入在各个模块的实现中的。项目里面一些chan的使用也是值得学习的。</p>
 </li>
 </ol>
+<p><a href="https://imgtu.com/i/oO0Ein"><img src="https://s4.ax1x.com/2021/12/13/oO0Ein.png" alt="oO0Ein.png"></a></p>
+<h4 id="新建Raft节点逻辑？"><a href="#新建Raft节点逻辑？" class="headerlink" title="新建Raft节点逻辑？"></a>新建Raft节点逻辑？</h4><ul>
+<li><p>① 校验配置</p>
+</li>
+<li><p>② 获取当前任务，这里是从StableStore中获取</p>
+</li>
+<li><p>③ 获取最近的日志号和具体Log，从LogStore中获取</p>
+</li>
+<li><p>④ 创建Buffer applyCh，用来应用Log到FSM。这里Future的应用可以学习下，后面写applyLog的时候可以详细分析。</p>
+</li>
+<li><p>⑤ 初始化Raft结构。</p>
+</li>
+<li><p>⑥ Set各种变量，这里可以研究下config是怎么实现线程安全的变更。</p>
+</li>
+<li><p>⑦ 尝试从备份中恢复，处理peer变更日志，eg：添加节点、删除节点。这里为啥只处理Peer变更信息，都已经将Log解析出来了，为啥不直接应用呢？</p>
+</li>
+<li><p>⑧ 给传输层注册心跳处理器。在这里初始化，而不是在goroutine里面处理，是为了避免队头阻塞。</p>
+</li>
+<li><p>⑨ 启动goroutine，如下启动了3个协程。</p>
+<p><a href="https://imgtu.com/i/oOhDud"><img src="https://s4.ax1x.com/2021/12/13/oOhDud.png" alt="oOhDud.png"></a></p>
+</li>
+</ul>
+<p>代码如下</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewRaft</span><span class="params">(conf *Config, fsm FSM, logs LogStore, stable StableStore, snaps SnapshotStore, trans Transport)</span> <span class="params">(*Raft, error)</span></span> &#123;</span><br><span class="line">  <span class="comment">// ① 校验配置</span></span><br><span class="line">  <span class="keyword">if</span> err := ValidateConfig(conf); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ② 获取当前任务，这里是从StableStore中获取</span></span><br><span class="line">  currentTerm, err := stable.GetUint64(keyCurrentTerm)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ③ 获取最近的日志号和具体Log，从LogStore中获取；</span></span><br><span class="line">  lastIndex, err := logs.LastIndex()</span><br><span class="line">  <span class="keyword">if</span> err = logs.GetLog(lastIndex, &amp;lastLog); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">&quot;failed to get last log at index %d: %v&quot;</span>, lastIndex, err)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ④ 创建Buffer applyCh，用来应用Log到FSM。这里Future的应用可以学习下。</span></span><br><span class="line">  applyCh := <span class="built_in">make</span>(<span class="keyword">chan</span> *logFuture)</span><br><span class="line">  <span class="keyword">if</span> conf.BatchApplyCh &#123;</span><br><span class="line">    applyCh = <span class="built_in">make</span>(<span class="keyword">chan</span> *logFuture, conf.MaxAppendEntries)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑤ 初始化Raft结构。</span></span><br><span class="line">  r := &amp;Raft&#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑥ Set各种变量，下面这一行的实现可以研究下，为啥不直接r.conf = conf</span></span><br><span class="line">  r.conf.Store(*conf)</span><br><span class="line">  r.setState(Follower)</span><br><span class="line">  r.setCurrentTerm(currentTerm)</span><br><span class="line">  r.setLastLog(lastLog.Index, lastLog.Term)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑦ 尝试从备份中恢复，处理peer变更日志，eg：添加节点、删除节点. </span></span><br><span class="line">  <span class="keyword">if</span> err := r.restoreSnapshot(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">  &#125;</span><br><span class="line">  snapshotIndex, _ := r.getLastSnapshot()</span><br><span class="line">  <span class="keyword">for</span> index := snapshotIndex + <span class="number">1</span>; index &lt;= lastLog.Index; index++ &#123;</span><br><span class="line">    <span class="keyword">var</span> entry Log</span><br><span class="line">    <span class="keyword">if</span> err := r.logs.GetLog(index, &amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> err := r.processConfigurationLogEntry(&amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// ⑧ 给传输层注册心跳处理器</span></span><br><span class="line">  trans.SetHeartbeatHandler(r.processHeartbeat)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑨ 启动goroutine</span></span><br><span class="line">  r.goFunc(r.run)</span><br><span class="line">  r.goFunc(r.runFSM)</span><br><span class="line">  r.goFunc(r.runSnapshots)</span><br><span class="line">  <span class="keyword">return</span> r, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>至此，我们就将Raft节点启动起来了</p>
+<h4 id="技术点1：atomic-Value"><a href="#技术点1：atomic-Value" class="headerlink" title="技术点1：atomic.Value"></a>技术点1：atomic.Value</h4><p><img src="https://blog.betacat.io/image/golang-atomic-value/atomic-value-store.drawio.png" alt="atomic.Value Store 流程"></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// conf这个变量会涉及到多个goroutine的并发修改&amp;读取。</span></span><br><span class="line"><span class="comment">// 为了保证读写的原子性，通常我们会加锁。但是加锁又有点过重了，为了更加高效的实现，使用了atomic。</span></span><br><span class="line">conf atomic.Value</span><br><span class="line">r.conf.Store(*conf)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 8个写routine + 1个读routine</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">TestAtomic</span><span class="params">(t *testing.T)</span></span> &#123;</span><br><span class="line">  <span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line">  <span class="keyword">var</span> gloMy = my&#123;&#125;</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">8</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      wg.Add(<span class="number">1</span>)</span><br><span class="line">      <span class="keyword">for</span> &#123;</span><br><span class="line">        tmp := rand.Uint64() % <span class="number">100</span></span><br><span class="line">        gloMy.v1 = tmp</span><br><span class="line">        <span class="comment">// 在这两次操作之间就会产生中间状态，这个状态就很奇怪没有意义</span></span><br><span class="line">        gloMy.v2 = fmt.Sprintf(<span class="string">&quot;s%d&quot;</span>, tmp)</span><br><span class="line">      &#125;</span><br><span class="line">      wg.Done()</span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  wg.Add(<span class="number">1</span>)</span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">      t.Log(gloMy.v1, gloMy.v2)</span><br><span class="line">    &#125;</span><br><span class="line">    wg.Done()</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  wg.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">=== RUN   TestAtomic</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">75</span> s64 <span class="comment">// 不合符预期，脏读了</span></span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">63</span> s63</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">48</span> s48</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">5</span> s5</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">1</span> s1</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://blog.betacat.io/post/golang-atomic-value-exploration/">推荐一篇文章</a> ：文中将atomic的来龙去脉都解释了一遍。</p>
+<h4 id="技术点2：队头阻塞"><a href="#技术点2：队头阻塞" class="headerlink" title="技术点2：队头阻塞"></a>技术点2：队头阻塞</h4><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 这行的位置，在goroutine启动之前注册HeartbeatHandler处理器</span></span><br><span class="line">trans.SetHeartbeatHandler(r.processHeartbeat)</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="小小疑问❓"><a href="#小小疑问❓" class="headerlink" title="小小疑问❓"></a>小小疑问❓</h4><p>Q: 为啥要叫FSM，我的理解FSM不就是类似于MySQL这种可以应用Log的地方吗？总感觉用状态机命名怪怪的，容易误会。</p>
+<p>Q: Config 和 Configuration的区别? Config里面都是单个Raft节点的配置，比如超时之类的；Configuration是Raft Cluster相关的信息，比如有几个节点之类的。</p>
+<p>​           </p>
 ]]></content>
       <tags>
-        <tag>Typora</tag>
-        <tag>图片粘贴</tag>
-        <tag>上传图床</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CockroachDB事务模型</title>
-    <url>/2021/12/21/%E4%BA%8B%E5%8A%A1%E6%A8%A1%E5%9E%8B-CockroachDB/</url>
-    <content><![CDATA[<p>前面我们看下Tidb的事务模型，基于Percolator实现，接着我们看下CockroachDB的实现方案，基于Spanner实现，对比二者的区别。我们还是从下面三个方面</p>
-<h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><h5 id="分布式事务模型要做什么？"><a href="#分布式事务模型要做什么？" class="headerlink" title="分布式事务模型要做什么？"></a>分布式事务模型要做什么？</h5><h5 id="需要思考的问题有哪些？"><a href="#需要思考的问题有哪些？" class="headerlink" title="需要思考的问题有哪些？"></a>需要思考的问题有哪些？</h5><h5 id="基于Spanner的解决方案？"><a href="#基于Spanner的解决方案？" class="headerlink" title="基于Spanner的解决方案？"></a>基于Spanner的解决方案？</h5><h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><h4 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h4><h4 id="Tidb-VS-CockroachDB"><a href="#Tidb-VS-CockroachDB" class="headerlink" title="Tidb VS CockroachDB"></a>Tidb VS CockroachDB</h4><p><strong>参考文档</strong></p>
-<p><a href="https://www.cockroachlabs.com/docs/stable/architecture/transaction-layer.html">https://www.cockroachlabs.com/docs/stable/architecture/transaction-layer.html</a></p>
-<p><a href="https://nan01ab.github.io/2021/06/Distributed-Txn(5).html">https://nan01ab.github.io/2021/06/Distributed-Txn(5).html</a></p>
-]]></content>
-      <tags>
-        <tag>CockroachDB</tag>
-        <tag>分布式事务</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>基础知识: bit vs byte</title>
-    <url>/2021/12/24/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86-bit-vs-byte/</url>
-    <content><![CDATA[<p>出来混都是要还的，基础知识不牢靠</p>
-<p>bit： 0-1码</p>
-<p>byte：8个0-1码，这里就有一个疑问，<strong>为啥是8呢</strong>，和CPU有关系吗？一个字节是8位</p>
-<p>Go语言从 的 var a int</p>
-<p>1 编译器 -&gt;</p>
-<p>2 OS（32位/64位）</p>
-<p>3 CPU</p>
-<p>一个int为啥设计4个byte or 8byte</p>
-]]></content>
-      <tags>
-        <tag>计算机基础</tag>
-        <tag>bit</tag>
-        <tag>byte</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>数据归档详细设计与实现</title>
-    <url>/2021/12/28/%E6%95%B0%E6%8D%AE%E5%BD%92%E6%A1%A3-%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/</url>
-    <content><![CDATA[<h4 id="查询能力"><a href="#查询能力" class="headerlink" title="查询能力"></a>查询能力</h4><p>实现的效果</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211228110147046.png" alt="image-20211228110147046" style="zoom:100%;float:left" />
-
-<p>人工指定</p>
-<p>当前select的流程</p>
-<p>加入路由能力后的select流程</p>
-<p>是否需要保留用户指定的这个能力</p>
-<p>是否需要支持多个字段归档 – 或者活后期可以扩展</p>
-<p>分库分表</p>
-<p>归档的规则存储在哪里</p>
-]]></content>
-      <tags>
-        <tag>数据归档</tag>
-        <tag>方案设计</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>本地调试proxysql</title>
-    <url>/2021/12/29/%E6%9C%AC%E5%9C%B0%E8%B0%83%E8%AF%95proxysql/</url>
-    <content><![CDATA[<h4 id="1-构建镜像"><a href="#1-构建镜像" class="headerlink" title="1. 构建镜像"></a>1. 构建镜像</h4><p>Dockerfile + 构建镜像</p>
-<figure class="highlight dockerfile"><table><tr><td class="code"><pre><span class="line"><span class="keyword">FROM</span> centos:<span class="number">7</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">LABEL</span><span class="bash"> description=<span class="string">&quot;Container for dev &amp; debug&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装依赖</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -y automake bzip2 cmake make gcc-c++ gcc git openssl openssl-devel gnutls gnutls-devel libtool patch openssh-server perl-IPC-Cmd</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -y gdb-gdbserver <span class="built_in">which</span> </span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置ssh服务</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">echo</span> <span class="string">&#x27;PermitRootLogin yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;PermitEmptyPasswords yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;PasswordAuthentication yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;root:root&#x27;</span> | chpasswd &amp;&amp; \</span></span><br><span class="line"><span class="bash">    ssh-keygen -A</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">EXPOSE</span> <span class="number">22</span> </span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">&quot;/usr/sbin/sshd&quot;</span>, <span class="string">&quot;-D&quot;</span>]</span></span><br></pre></td></tr></table></figure>
-
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker build -t proxysqldebug:v1 .</span><br></pre></td></tr></table></figure>
-
-<h4 id="2-运行容器"><a href="#2-运行容器" class="headerlink" title="2. 运行容器"></a>2. 运行容器</h4><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker run -d -p 2222:22 --security-opt seccomp:unconfined -v $PWD:/home/luzhangting001/proxysql --name proxysqldev proxysqldebug:v1</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 后面容器stop + start 不要在重启，如下图</span></span><br></pre></td></tr></table></figure>
-
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229121528631.png" alt="image-20211229121528631" style="zoom:100%; float:left" />
-
-<h4 id="3-启动debug"><a href="#3-启动debug" class="headerlink" title="3. 启动debug"></a>3. 启动debug</h4><p>配置launch.json</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="string">&quot;configurations&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;(gdb) Launch&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;cppdbg&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;request&quot;</span>: <span class="string">&quot;launch&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;program&quot;</span>: <span class="string">&quot;/home/luzhangting001/proxysql/src/proxysql&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;args&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;--foreground&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--debug&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--config&quot;</span>,</span><br><span class="line">            <span class="string">&quot;/home/luzhangting001/proxysql/src/proxysql.cfg&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--initial&quot;</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="attr">&quot;stopAtEntry&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;cwd&quot;</span>: <span class="string">&quot;/home/luzhangting001/proxysql&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;pipeTransport&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;debuggerPath&quot;</span>: <span class="string">&quot;/usr/bin/gdb&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;pipeProgram&quot;</span>: <span class="string">&quot;/usr/bin/ssh&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;pipeArgs&quot;</span>: [</span><br><span class="line">                <span class="string">&quot;root@localhost&quot;</span>,</span><br><span class="line">                <span class="string">&quot;-p&quot;</span>,</span><br><span class="line">                <span class="string">&quot;2222&quot;</span></span><br><span class="line">            ],</span><br><span class="line">            <span class="attr">&quot;pipeCwd&quot;</span>: <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;environment&quot;</span>: [],</span><br><span class="line">        <span class="attr">&quot;externalConsole&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;MIMode&quot;</span>: <span class="string">&quot;gdb&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;sourceFileMap&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;/home/luzhangting001/proxysql&quot;</span>: <span class="string">&quot;$&#123;workspaceFolder&#125;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-
-<p>启动报错：因为之前弄过，ssh报错了</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229121827990.png" alt="image-20211229121827990" style="zoom:100%; float:left" />
-
-<p>将known_hosts里面的相关信息删除, 其实我不知道是不是必须这么做，可能不是必须的</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229122615654.png" alt="image-20211229122615654" style="zoom:100%; float:left" />
-
-<p>将本机的公钥上传</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">ssh-copy-id -p 2222 root@localhost</span><br></pre></td></tr></table></figure>
-
-<p>vscode里面启动</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229153334425.png" alt="image-20211229153334425" style="zoom:80%;float:left" />
-]]></content>
-      <tags>
-        <tag>proxysql</tag>
-        <tag>mac本地环境</tag>
+        <tag>raft</tag>
       </tags>
   </entry>
 </search>
