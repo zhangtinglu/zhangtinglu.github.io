@@ -1,307 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>go-包管理</title>
-    <url>/2022/01/21/go-%E5%8C%85%E7%AE%A1%E7%90%86/</url>
-    <content><![CDATA[<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>每次打开IDE，都变红。如果超过3次，我想着是不是应该将事实弄明白呢。</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220121111115117.png" alt="image-20220121111115117" style="zoom:100%;float:left" />
+    <title>hashicorp:raft源码系列(1)--导读</title>
+    <url>/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-1-%E5%AF%BC%E8%AF%BB/</url>
+    <content><![CDATA[<h3 id="Raft是干啥的？"><a href="#Raft是干啥的？" class="headerlink" title="Raft是干啥的？"></a>Raft是干啥的？</h3><p><a href="http://thesecretlivesofdata.com/raft/">动画说明</a></p>
+<p>简述如下图：用户SET 5，3个不同节点都能获取SET 5的操作。所谓的最简单的分布式一致性。</p>
+<p><a href="https://imgtu.com/i/oO3r0P"><img src="https://s4.ax1x.com/2021/12/13/oO3r0P.png" alt="oO3r0P.png"></a></p>
+<h3 id="Raft项目包含哪些模块？"><a href="#Raft项目包含哪些模块？" class="headerlink" title="Raft项目包含哪些模块？"></a>Raft项目包含哪些模块？</h3><h4 id="项目有多少行"><a href="#项目有多少行" class="headerlink" title="项目有多少行?"></a>项目有多少行?</h4><p>分析下整个项目大概是1W多行，并不是很大，代码注释非常齐全，理解起来比较轻松。代码抽象得很好，非常值得学习。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">-&gt;</span><span class="bash"> % cloc ./</span></span><br><span class="line">      77 text files.</span><br><span class="line">      77 unique files.</span><br><span class="line">       8 files ignored.</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 1.90  T=0.09 s (814.1 files/s, 201614.7 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Go                              57           2207           2786          11864</span><br><span class="line">Markdown                         4            106              0            255</span><br><span class="line">YAML                             4             26             29            141</span><br><span class="line">XML                              4              0              0            108</span><br><span class="line">make                             1             10              2             33</span><br><span class="line">Bourne Shell                     1              3              3             10</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                            71           2352           2820          12411</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
 
-<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><h5 id="1、为啥会报错？"><a href="#1、为啥会报错？" class="headerlink" title="1、为啥会报错？"></a>1、为啥会报错？</h5><blockquote>
-<p>肯定是找不到对应的pkg</p>
-</blockquote>
-<h5 id="2、那IDE到底是去哪里找了呢？"><a href="#2、那IDE到底是去哪里找了呢？" class="headerlink" title="2、那IDE到底是去哪里找了呢？"></a>2、那IDE到底是去哪里找了呢？</h5><blockquote>
-<p>理论上是gopath路径下面，👇🏻GOPATH=”/root/gopath” 这里，IDE里面可以设置的项目更多</p>
-</blockquote>
-<p>go env的输出</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">GO111MODULE=&quot;on&quot; </span><br><span class="line">GOPATH=&quot;/root/gopath&quot;</span><br><span class="line">GOPROXY=&quot;https://goproxy.cn,direct&quot;  # 设置代理，go get的时候快点</span><br><span class="line">GOROOT=&quot;/usr/local/go&quot;  # go二进制包的安装地址</span><br><span class="line">GOVERSION=&quot;go1.17&quot;  # go版本</span><br></pre></td></tr></table></figure>
-
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220121181545764.png" alt="image-20220121181545764" style="zoom:100%;float:left" />
-
-<h5 id="3、实际上GOPATH下面是有需要的pkg的"><a href="#3、实际上GOPATH下面是有需要的pkg的" class="headerlink" title="3、实际上GOPATH下面是有需要的pkg的"></a>3、实际上GOPATH下面是有需要的pkg的</h5><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 需要的包</span>	</span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> % ll /Users/linmi/go/pkg/mod/github.com/prometheus</span></span><br><span class="line">total 0</span><br><span class="line">dr-xr-xr-x   23 linmi  staff   736B  1 21 12:01 client_golang@v1.12.0</span><br><span class="line">dr-xr-xr-x   13 linmi  staff   416B  1 21 12:01 client_model@v0.2.0</span><br><span class="line">dr-xr-xr-x   24 linmi  staff   768B  1 21 12:01 common@v0.32.1</span><br><span class="line">dr-xr-xr-x  122 linmi  staff   3.8K  1 21 12:01 procfs@v0.7.3</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> IDE报错的路径</span></span><br><span class="line">/Users/linmi/go/pkg/mod/src/github.com/prometheus/client_golang/prometheus/promhttp (from $GOPATH)</span><br></pre></td></tr></table></figure>
-
-<p>📢：IDE报错的路径里面多了一层<code>src</code>目录，这就有点出乎意料了。</p>
-<h5 id="4、最佳实践"><a href="#4、最佳实践" class="headerlink" title="4、最佳实践"></a>4、最佳实践</h5><p>gopath和go mod是互斥的，现在的话肯定是go mod了。最简单&amp;有效的方法，类似python那样，各个项目自己管理自己的包。</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">go mod vendor # 创建vendor依赖</span><br><span class="line">go mod tidy </span><br></pre></td></tr></table></figure>
-
-<p>IDE打开go modules的选项，问题自然就解决了</p>
-<h5 id="5、Mac上go多版本怎么管理"><a href="#5、Mac上go多版本怎么管理" class="headerlink" title="5、Mac上go多版本怎么管理"></a>5、Mac上go多版本怎么管理</h5><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先确认是不是brew管理</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> % <span class="built_in">which</span> go</span></span><br><span class="line">/usr/local/bin/go</span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> % ll -h /usr/<span class="built_in">local</span>/bin/go</span></span><br><span class="line">lrwxr-xr-x  1 linmi  admin    26B 10 12 23:34 /usr/local/bin/go -&gt; ../Cellar/go/1.17.2/bin/go # Cellar这里就能说明是的</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 接着看看有哪些版本，我的本机有3个版本</span></span><br><span class="line">ll /usr/local/opt | grep go  # opt=options查看可选择的版本</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    19B 10 12 23:34 go -&gt; ../Cellar/go/1.17.2</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    25B 10 13 10:54 go@1.15 -&gt; ../Cellar/go@1.15/1.15.15</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    24B  9 23 11:27 go@1.16 -&gt; ../Cellar/go@1.16/1.16.8</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    19B 10 12 23:34 go@1.17 -&gt; ../Cellar/go/1.17.2</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    19B 10 12 23:34 golang -&gt; ../Cellar/go/1.17.2</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    19B 10 12 23:34 google-go -&gt; ../Cellar/go/1.17.2</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 那要怎么使用brew快捷的进行设置呢</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> % brew link go</span></span><br><span class="line">Warning: Already linked: /usr/local/Cellar/go/1.17.2</span><br><span class="line">To relink, run:</span><br><span class="line">  brew unlink go &amp;&amp; brew link go   # 重新回到最近的版本</span><br><span class="line"><span class="meta">-&gt;</span><span class="bash">% brew link --overwrite go@1.16  <span class="comment"># 看这个就知道是重写了</span></span></span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <tags>
-        <tag>go</tag>
-        <tag>包管理</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>hexo文章设置草稿-暂不发布-文章分类</title>
-    <url>/2022/01/12/hexo%E6%96%87%E7%AB%A0%E8%AE%BE%E7%BD%AE%E8%8D%89%E7%A8%BF-%E6%9A%82%E4%B8%8D%E5%8F%91%E5%B8%83-%E6%96%87%E7%AB%A0%E5%88%86%E7%B1%BB/</url>
-    <content><![CDATA[<h4 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h4><p>1、每次执行hexo d -g都会将所有的所有文章push上去，有的文章其实一个是没有写完，一个是敏感信息还需要处理</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">hexo new draft &lt;title&gt;  # source/_drafts</span><br><span class="line">hexo P &lt;filename&gt;       # source/_drafts  -&gt;  source/_post</span><br></pre></td></tr></table></figure>
-
-<p>2、能不能分类，当前所有的文章都在source/_posts下面(如下图)，后面越来越多，真的不好管理，也不好找</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220112102324526.png" alt="image-20220112102324526" style="zoom:50%;float:left" />
-
-<h4 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h4>]]></content>
-      <tags>
-        <tag>hexo</tag>
-        <tag>blog</tag>
-        <tag>草稿</tag>
-        <tag>文章分类</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>买一个3年腾讯云服务-日常开发使用</title>
-    <url>/2022/01/11/%E4%B9%B0%E4%B8%80%E4%B8%AA3%E5%B9%B4%E8%85%BE%E8%AE%AF%E4%BA%91%E6%9C%8D%E5%8A%A1-%E6%97%A5%E5%B8%B8%E5%BC%80%E5%8F%91%E4%BD%BF%E7%94%A8/</url>
-    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>今天在看大佬写代码的过程中，大佬说我不想在本地开发，环境重启麻烦，我想万分赞同。每次换电脑都是烦人。</p>
-<p>然后我就打开了阿里云，一看好贵，接着打开了腾讯云，嗯，好像便宜点。我承认我就是被下面的广告吸引的。然后我就点了立即购买的按钮😂</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111143908730.png" alt="image-20220111143908730" style="zoom:50%;float:left" />
-
-<p>接着我想1核2G实在是气质不符，头脑一热2核4G，一看1年虽然也很长， 不过3年好像更不用操心，主要是怕被催账。</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111144433048.png" alt="image-20220111144433048" style="zoom:50%;float:left" />
-
-<p>好，接着就是打开微信-绑定+付钱了,订单就好了</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111144703537.png" alt="image-20220111144703537" style="zoom:50%;float:left" />
-
-<h4 id="ssh登录设置"><a href="#ssh登录设置" class="headerlink" title="ssh登录设置"></a>ssh登录设置</h4><p>说实话，不论是阿里云还是腾讯云的web都异常的复杂，各种点点点都是产品+产品，账单+账单。就想问刚买的服务器去哪了。</p>
-<p>不浪费时间：<a href="https://console.cloud.tencent.com/lighthouse/instance/index">https://console.cloud.tencent.com/lighthouse/instance/index</a>  chrome保存🔖吧，找起来费劲。</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111145804003.png" alt="image-20220111145804003" style="zoom:50%;float:left" />
-
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 编辑sshd_config,如下</span></span></span><br><span class="line">sudo vi /etc/ssh/sshd_config</span><br><span class="line">[lighthouse@VM-24-14-centos ~]$ # vim /etc/ssh/sshd_config </span><br><span class="line">[lighthouse@VM-24-14-centos ~]$ # PermitRootLogin yes 去掉注释</span><br><span class="line">[lighthouse@VM-24-14-centos ~]$ # pubkeyAuthentication yes 去掉注释</span><br><span class="line">[lighthouse@VM-24-14-centos ~]$ # PasswordAuthentication yes 去掉注释</span><br><span class="line"><span class="meta">#</span><span class="bash"> 重启sshd服务</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<h4 id="本机配置ssh并登录"><a href="#本机配置ssh并登录" class="headerlink" title="本机配置ssh并登录"></a>本机配置ssh并登录</h4><p>找到公网ip</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111150006715.png" alt="image-20220111150006715" style="zoom:50%;float:left" />
-
-<p>将本机的公钥通过ssh-copy-id拷贝到remote host</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">ssh-copy-id root@ip</span><br><span class="line">ssh root@ip  # 直接登录</span><br></pre></td></tr></table></figure>
-
-<h4 id="通过vscode登录并且code"><a href="#通过vscode登录并且code" class="headerlink" title="通过vscode登录并且code"></a>通过vscode登录并且code</h4><h5 id="先安装remote-ssh插件"><a href="#先安装remote-ssh插件" class="headerlink" title="先安装remote ssh插件"></a>先安装remote ssh插件</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111150257939.png" alt="image-20220111150257939" style="zoom:50%;float:left" />
-
-<h5 id="输入ssh-root-ip并选择ssh-config，原谅色出现搞完，接着就是愉快的coding"><a href="#输入ssh-root-ip并选择ssh-config，原谅色出现搞完，接着就是愉快的coding" class="headerlink" title="输入ssh root@ip并选择ssh config，原谅色出现搞完，接着就是愉快的coding"></a>输入ssh root@ip并选择ssh config，原谅色出现搞完，接着就是愉快的coding</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111150401476.png" alt="image-20220111150401476" style="zoom:50%;float:left" />
-
-<h5 id="打开远端的文件"><a href="#打开远端的文件" class="headerlink" title="打开远端的文件"></a>打开远端的文件</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111151140566.png" alt="image-20220111151140566" style="zoom:50%;float:left" />
-
-<h5 id="删除下remote-host，比如ip写错了之类，编辑-ssh-config文件才行"><a href="#删除下remote-host，比如ip写错了之类，编辑-ssh-config文件才行" class="headerlink" title="删除下remote host，比如ip写错了之类，编辑~/.ssh/config文件才行"></a>删除下remote host，比如ip写错了之类，编辑~/.ssh/config文件才行</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111151753449.png" alt="image-20220111151753449" style="zoom:50%;float:left" />
-
-<h5 id="自己安装需要的插件，注意本地和远程是不一样的"><a href="#自己安装需要的插件，注意本地和远程是不一样的" class="headerlink" title="自己安装需要的插件，注意本地和远程是不一样的"></a>自己安装需要的插件，注意本地和远程是不一样的</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111152351292.png" alt="image-20220111152351292" style="zoom:50%;float:left" />
-
-<h5 id="在centos7上安装go，设置go-env"><a href="#在centos7上安装go，设置go-env" class="headerlink" title="在centos7上安装go，设置go env"></a>在centos7上安装go，设置go env</h5><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">yum update -y</span><br><span class="line">yum install -y go # 安装的是1.15</span><br><span class="line">go env -w GOPROXY=https://goproxy.cn,direct</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<h5 id="为啥这个导入会报错呢？-嗯，大概率就是环境的问题，用个go-mod-init解决就行"><a href="#为啥这个导入会报错呢？-嗯，大概率就是环境的问题，用个go-mod-init解决就行" class="headerlink" title="为啥这个导入会报错呢？ 嗯，大概率就是环境的问题，用个go mod init解决就行"></a>为啥这个导入会报错呢？ 嗯，大概率就是环境的问题，用个go mod init解决就行</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111161358986.png" alt="image-20220111161358986" style="zoom:50%;float:left" />
-
-<p>2021-01-11今天先到这，等会面有新的想法了在更新</p>
-<p>2021-01-14号，接着上面，被攻击了</p>
-<h3 id="背景-1"><a href="#背景-1" class="headerlink" title="背景"></a>背景</h3><p>我的腾讯云的轻量服务器，突然给我发消息说我有违规行为，我就开了22端口做了一个远程登录😂</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114115516893.png" alt="image-20220114115516893" style="zoom:50%;float:left" />
-
-<h3 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h3><p>1、我先等了一天，通知的24h接触封禁</p>
-<p>2、结果还是不能登录</p>
-<p>3、客服说得用VNC登录，<a href="https://cloud.tencent.com/document/product/1207/46824">https://cloud.tencent.com/document/product/1207/46824</a> ， 就是下面的这个按钮</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114115847427.png" alt="image-20220114115847427" style="zoom:50%;float:left" />
-
-<p>4、我发现得要个密码不是，可是没有初始密码，记住第一次必须是重置密码，在页面上ctrl+f搜索密码,就是下面的&lt;重置密码&gt;按钮。实际上操作就是之前我们做的sudo passwd root  – 注意这里前往不要弄的太简单了，真的很容易被破解。</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114120029547.png" alt="image-20220114120029547" style="zoom:50%;float:left" />
-
-<p>5、好了一次次重启之后你就可以在&lt;页面上&gt;正常登录了，接着肯定是本机登录，发现就出现了下面的东西😂</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">-&gt;</span><span class="bash"> % ssh root@ip</span></span><br><span class="line">root@ip: Permission denied (publickey,gssapi-keyex,gssapi-with-mic).</span><br></pre></td></tr></table></figure>
-
-<p>6、为啥不行了呢， 看文档说是要么使用密码，要么使用秘钥，实际上是都可以用，不过就是授权的方式不同</p>
-<ul>
-<li>管理密钥  <a href="https://cloud.tencent.com/document/product/1207/44573">https://cloud.tencent.com/document/product/1207/44573</a></li>
-</ul>
-<p>因为之前我们登录过，在~/.ssh/known_hosts这里已经有ip记录了，把对应ip的记录去掉再试。</p>
-<p>7、调整好了之后我们接着ssh root@ip, 这些更好了，直接给我闪退了。同时，我还发现了一个新问题，我不能su root了</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114141342311.png" alt="image-20220114141342311" style="zoom:50%;float:left" />
-
-<p>8、突然，我的服务器咋了，被攻击了~ 盲猜应该是将我的ssh服务给篡改了。导致了我ssh连接了就闪退，还有我不能切换root账号。</p>
-<p>9、好在我没啥东西，其实我觉得重新安装sshd即可，但是为了保险起见，我还是重新安装OS吧。</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114142036461.png" alt="image-20220114142036461" style="zoom:50%;float:left" />
-
-<p>好家伙，这个操作贼快，这个所谓的轻量服务器容器没跑了</p>
-<p>10、为啥ssh-copy-id不需要密码？对比手动和ssh-copy-id，大概是ssh-copy-id有固定程序吧。</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 手动</span></span><br><span class="line">ssh root@ip # 输入root密码</span><br><span class="line">vim ~/.ssh/authorized_keys  # 添加公钥</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> ssh-copy-id</span></span><br><span class="line">ssh-copy-id root@ip # 不需要输入密码 -- 为啥？</span><br></pre></td></tr></table></figure>
-
-<p>11、公钥和私钥是怎么一起起作用的?</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先说问题的来源</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 本机 -&gt; remote</span></span><br><span class="line">ssh-copy-id 将本地的公钥copy到 ~/.ssh/authorized_keys    ---&gt;  本地可以登录远端</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 腾讯云 授权过程  秘钥管理</span></span><br><span class="line">生成秘钥一对，本地保存私钥</span><br><span class="line">下发公钥到实例</span><br><span class="line">ssh -i 私钥 root@ip </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 实际上也是一样的，本地连接的时候使用私钥去匹配remote ~/.ssh/authorized_keys 里面的公钥。</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 经历一些问题可以更快的去理解很多东西的原理</span></span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <tags>
-        <tag>腾讯云</tag>
-        <tag>ECS</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>本地调试proxysql</title>
-    <url>/2021/12/29/%E6%9C%AC%E5%9C%B0%E8%B0%83%E8%AF%95proxysql/</url>
-    <content><![CDATA[<h4 id="1-构建镜像"><a href="#1-构建镜像" class="headerlink" title="1. 构建镜像"></a>1. 构建镜像</h4><p>Dockerfile + 构建镜像</p>
-<figure class="highlight dockerfile"><table><tr><td class="code"><pre><span class="line"><span class="keyword">FROM</span> centos:<span class="number">7</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">LABEL</span><span class="bash"> description=<span class="string">&quot;Container for dev &amp; debug&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装依赖</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -y automake bzip2 cmake make gcc-c++ gcc git openssl openssl-devel gnutls gnutls-devel libtool patch openssh-server perl-IPC-Cmd</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -y gdb-gdbserver <span class="built_in">which</span> </span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置ssh服务</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">echo</span> <span class="string">&#x27;PermitRootLogin yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;PermitEmptyPasswords yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;PasswordAuthentication yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;root:root&#x27;</span> | chpasswd &amp;&amp; \</span></span><br><span class="line"><span class="bash">    ssh-keygen -A</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">EXPOSE</span> <span class="number">22</span> </span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">&quot;/usr/sbin/sshd&quot;</span>, <span class="string">&quot;-D&quot;</span>]</span></span><br></pre></td></tr></table></figure>
-
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker build -t proxysqldebug:v1 .</span><br></pre></td></tr></table></figure>
-
-<h4 id="2-运行容器"><a href="#2-运行容器" class="headerlink" title="2. 运行容器"></a>2. 运行容器</h4><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker run -d -p 2222:22 --security-opt seccomp:unconfined -v $PWD:/home/luzhangting001/proxysql --name proxysqldev proxysqldebug:v1</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 后面容器stop + start 不要在重启，如下图</span></span><br></pre></td></tr></table></figure>
-
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229121528631.png" alt="image-20211229121528631" style="zoom:100%; float:left" />
-
-<h4 id="3-启动debug"><a href="#3-启动debug" class="headerlink" title="3. 启动debug"></a>3. 启动debug</h4><p>配置launch.json</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="string">&quot;configurations&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;(gdb) Launch&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;cppdbg&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;request&quot;</span>: <span class="string">&quot;launch&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;program&quot;</span>: <span class="string">&quot;/home/luzhangting001/proxysql/src/proxysql&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;args&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;--foreground&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--debug&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--config&quot;</span>,</span><br><span class="line">            <span class="string">&quot;/home/luzhangting001/proxysql/src/proxysql.cfg&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--initial&quot;</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="attr">&quot;stopAtEntry&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;cwd&quot;</span>: <span class="string">&quot;/home/luzhangting001/proxysql&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;pipeTransport&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;debuggerPath&quot;</span>: <span class="string">&quot;/usr/bin/gdb&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;pipeProgram&quot;</span>: <span class="string">&quot;/usr/bin/ssh&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;pipeArgs&quot;</span>: [</span><br><span class="line">                <span class="string">&quot;root@localhost&quot;</span>,</span><br><span class="line">                <span class="string">&quot;-p&quot;</span>,</span><br><span class="line">                <span class="string">&quot;2222&quot;</span></span><br><span class="line">            ],</span><br><span class="line">            <span class="attr">&quot;pipeCwd&quot;</span>: <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;environment&quot;</span>: [],</span><br><span class="line">        <span class="attr">&quot;externalConsole&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;MIMode&quot;</span>: <span class="string">&quot;gdb&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;sourceFileMap&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;/home/luzhangting001/proxysql&quot;</span>: <span class="string">&quot;$&#123;workspaceFolder&#125;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-
-<p>启动报错：因为之前弄过，ssh报错了</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229121827990.png" alt="image-20211229121827990" style="zoom:100%; float:left" />
-
-<p>将known_hosts里面的相关信息删除, 其实我不知道是不是必须这么做，可能不是必须的</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229122615654.png" alt="image-20211229122615654" style="zoom:100%; float:left" />
-
-<p>将本机的公钥上传</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">ssh-copy-id -p 2222 root@localhost</span><br></pre></td></tr></table></figure>
-
-<p>vscode里面启动</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229153334425.png" alt="image-20211229153334425" style="zoom:80%;float:left" />
-]]></content>
-      <tags>
-        <tag>proxysql</tag>
-        <tag>mac本地环境</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Typora写blog中粘贴图片自动上传图床</title>
-    <url>/2021/12/24/blog%E5%9B%BE%E5%BA%8A%E7%AF%87/</url>
-    <content><![CDATA[<h4 id="Goal"><a href="#Goal" class="headerlink" title="Goal"></a>Goal</h4><p>我电脑上 cmd + trl + a(微信截图) -&gt; 来到Typora(cmd + v) 粘贴。</p>
-<p>然后就自动帮我上传图床，并且替换成图床照片吧，这样我也不需要切换到图床上去捣鼓了，就专注在Typora上去打字。</p>
-<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>图床：<a href="https://blog.svend.cc/upic/tutorials/github/">github</a>、<a href="https://blog.svend.cc/upic/tutorials/gitee/">gitee</a>，我自己比较常用的是路过图床，但是uPic不会配置，那就算啦，佛系找个能成功的。</p>
-<blockquote>
-<p>采坑：github图片可以正常上传，但是展示出来</p>
-</blockquote>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225084632762.png" alt="image-20211225084632762" style="zoom:30%;float:left" />
-
-<p>因此，我们还好折腾Gitee配置。</p>
+<h4 id="从哪里开始？"><a href="#从哪里开始？" class="headerlink" title="从哪里开始？"></a>从哪里开始？</h4><p>首先，我们来看下<code>api.go/Raft</code>结构，表示的是一个Raft节点，最核心的数据结构。划分3大块</p>
 <ol>
-<li><p>创建仓库</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225085435762.png" alt="image-20211225085435762" style="zoom:25%;float:left" />
-
-<ol start="2">
-<li>生成私人令牌</li>
-</ol>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225083650340.png" alt="image-20211225083650340" style="zoom:25%;float:left" />
-
-<ol start="3">
-<li><p>配置uPic</p>
-<p>uPic直接github上下载了安装好，然后按照下面的方法配置</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090108133.png" alt="image-20211225090108133" style="zoom:25%;float:left" /></li>
-<li><p>配置Typora</p>
-<p>cmd+,打开软件偏好设置,成功了之后就在写blog的时候直接截图+粘贴吧，巴斯的很~</p>
-<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090323825.png" alt="image-20211225090323825" style="zoom:25%;float:left" /></li>
-</ol>
+<li><p>NewRaft节点需要的信息：下图中标红点的，几大核心组成。下一篇我们从网络层开始详细分析。</p>
+<blockquote>
+<p>除了raftState，其他部分全是interface，模块抽象的很细致。</p>
+</blockquote>
+</li>
+<li><p>Leader操作相关：整个Raft最核心的就是Leader的状态转换过程。我们后续也会对这一部分的实现做详细说明。</p>
+</li>
+<li><p>一些异步操作：这一块是嵌入在各个模块的实现中的。项目里面一些chan的使用也是值得学习的。</p>
 </li>
 </ol>
-]]></content>
-      <tags>
-        <tag>Typora</tag>
-        <tag>图片粘贴</tag>
-        <tag>上传图床</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>hashicorp-raft源码系列-4-leader逻辑</title>
-    <url>/2021/12/20/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-4-leader%E9%80%BB%E8%BE%91/</url>
-    <content><![CDATA[<p>前面三篇我们分别介绍了Raft的API、网络层、存储层，从这一篇开始我们来看Raft的<code>Leader、Candidate、Follower</code>实现。</p>
-<h4 id="r-runLeader逻辑"><a href="#r-runLeader逻辑" class="headerlink" title="r.runLeader逻辑"></a>r.runLeader逻辑</h4><p>事务提交的过程：接着我们一点点分析，</p>
-<h5 id="发送请求，Apply方法"><a href="#发送请求，Apply方法" class="headerlink" title="发送请求，Apply方法"></a>发送请求，Apply方法</h5><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Apply</span></span><br><span class="line"><span class="comment">//  -&gt; ApplyLog</span></span><br><span class="line"><span class="comment">// 写的时候也不需要返回什么，主要就是Check Error</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">ApplyLog</span><span class="params">(log Log, timeout time.Duration)</span> <span class="title">ApplyFuture</span></span> &#123;</span><br><span class="line">  logFuture := &amp;logFuture&#123;</span><br><span class="line">    log: Log&#123;</span><br><span class="line">      Type:       LogCommand,</span><br><span class="line">      Data:       log.Data,</span><br><span class="line">      Extensions: log.Extensions,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;</span><br><span class="line">  logFuture.init()</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  ...</span><br><span class="line">  <span class="comment">// 这个写法很有意思，到底是什么意思呢？放到applyCh马上返回，这个时候return logFuture不一定有数据的吧，client怎么判断操作是成功还是失败呢。</span></span><br><span class="line">  <span class="keyword">case</span> r.applyCh &lt;- logFuture:</span><br><span class="line">    <span class="keyword">return</span> logFuture</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="runLeader"><a href="#runLeader" class="headerlink" title="runLeader()"></a>runLeader()</h5><p>接着我们看下leader初始化的时候会干些啥，重点看下初始化的后台处理协程。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">runLeader</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="comment">// ?? leaderCh这个chan还真的是不知道干啥的，后面有时间在重点看下</span></span><br><span class="line">  overrideNotifyBool(r.leaderCh, <span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// setup leader state，主要是节点的信息</span></span><br><span class="line">  r.setupLeaderState()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 定义清理逻辑</span></span><br><span class="line">  <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">   ...</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 重点：为每一个peer启动一个Log复制协程，</span></span><br><span class="line">  r.startStopReplication()</span><br><span class="line">  <span class="comment">//  调用-&gt; r.goFunc(func() &#123; r.replicate(s) &#125;)</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 开始leader循环</span></span><br><span class="line">  r.leaderLoop()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="Leader消费r-applyCh"><a href="#Leader消费r-applyCh" class="headerlink" title="Leader消费r.applyCh"></a>Leader消费r.applyCh</h5><p>将客户端的写凑成一批，</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">case</span> newLog := &lt;-r.applyCh:</span><br><span class="line">  <span class="comment">// Group commit, 组提交</span></span><br><span class="line">  ready := []*logFuture&#123;newLog&#125;</span><br><span class="line">GROUP_COMMIT_LOOP:</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; r.config().MaxAppendEntries; i++ &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> newLog := &lt;-r.applyCh:</span><br><span class="line">      ready = <span class="built_in">append</span>(ready, newLog)</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">break</span> GROUP_COMMIT_LOOP</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Dispatch the logs</span></span><br><span class="line">  <span class="keyword">if</span> stepDown &#123;</span><br><span class="line">     ....</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    r.dispatchLogs(ready)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-
-<p>接着看看dispatchLogs逻辑</p>
-<p>加r.leaderState.inflight list, 表示需要处理的applyLogs</p>
-<p>日志持久化 r.logs.StoreLogs(logs)，类比mysql 持久化redo log</p>
-<p>将自己的log index往前，并且通知<code>commitCh</code></p>
-<p>持久化lastIndex，r.setLastLog(lastIndex, term)</p>
-<p>通知每个replication新Log –  asyncNotifyCh(f.triggerCh)  </p>
-<p>接着就是上面的初始化的时候干的事情了，给每个channel发消息</p>
-<p>想想哪些是异步的？为啥要异步处理呢？</p>
-<p>搞清楚重点</p>
-<p>下面的<code>observe</code>是干啥的？</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">r.observe(LeaderObservation&#123;Leader: leader&#125;)</span><br></pre></td></tr></table></figure>
-
-<p>client 写请求 :api.go   Apply方法，返回一个ApplyFuture对象，包含req、response、error</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-
-<p>–&gt;  发消息 append entity –&gt; 多数派的回复  – &gt; 客户端返回  –&gt; 应用FSM(另一个流程)–&gt; 通知其他节点可以应用 –</p>
-<p>client返回的标准是啥？日志多数派 or  Master apply成功(不可能)   </p>
-<p>认真琢磨其中的优化</p>
-<h4 id="问题记录"><a href="#问题记录" class="headerlink" title="问题记录"></a>问题记录</h4><p>1、chan里面只有一个元素，并且不能并发调用。下面代码的理解，到底是怎么避免并发调用的？还有别的实现吗？这个实现是不是有点trick？</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">overrideNotifyBool</span><span class="params">(ch <span class="keyword">chan</span> <span class="keyword">bool</span>, v <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  <span class="keyword">case</span> ch &lt;- v:</span><br><span class="line">    <span class="comment">// value sent, all done</span></span><br><span class="line">  <span class="keyword">case</span> &lt;-ch:</span><br><span class="line">    <span class="comment">// channel had an old value</span></span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> ch &lt;- v:</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">&quot;race: channel was sent concurrently&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>2、<code>leaderLoop</code>这个里面全是异步的chan，代码规划的非常好，很值得学习</p>
-]]></content>
-      <tags>
-        <tag>raft</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>hashicorp:raft源码系列(3)--存储层</title>
-    <url>/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-3-%E5%AD%98%E5%82%A8%E5%B1%82/</url>
-    <content><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>接着上一篇我们讲了网络层，接下来我们来讲<code>LogStore、StableStore、FSM、SnapshotStore</code>，为啥这些一起讲呢，因为这些都是存储相关，并且功能相对简单，并没有像<code>Transport</code>那样有<code>NetworkTransport</code>实现可以用来进行分析。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">func</span> <span class="title">NewRaft</span><span class="params">(conf *Config, fsm FSM, logs LogStore, stable StableStore, snaps SnapshotStore, trans Transport)</span> <span class="params">(*Raft, error)</span></span> &#123;     	......&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="StableStore"><a href="#StableStore" class="headerlink" title="StableStore"></a>StableStore</h4><p>这个组件主要就是为了安全考虑而存在的，提供一个可以持久化k-v的存储的即可。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> StableStore <span class="keyword">interface</span> &#123;</span><br><span class="line">  Set(key []<span class="keyword">byte</span>, val []<span class="keyword">byte</span>) error</span><br><span class="line">  Get(key []<span class="keyword">byte</span>) ([]<span class="keyword">byte</span>, error)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// uint64是日志号和任期定义的类型，方便存</span></span><br><span class="line">  SetUint64(key []<span class="keyword">byte</span>, val <span class="keyword">uint64</span>) error</span><br><span class="line">  GetUint64(key []<span class="keyword">byte</span>) (<span class="keyword">uint64</span>, error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<h4 id="LogStore"><a href="#LogStore" class="headerlink" title="LogStore"></a>LogStore</h4><p>这个组件就是为了存日志的，比如用户发过来<code>set a=1</code>, 将这个存起来即可。和上面的<code>StableStore</code>能力是同一种，不过日志可能比较多，需要根据实现情况进行选择。项目在测试的时候实现了一个<code>inmem</code>的日志存储，用了一个<code>map</code>来进行存储。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// inmem模拟，直接map存，基本能力-读写。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewInmemStore</span><span class="params">()</span> *<span class="title">InmemStore</span></span> &#123;</span><br><span class="line">  i := &amp;InmemStore&#123;</span><br><span class="line">    logs:  <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">uint64</span>]*Log),</span><br><span class="line">    kv:    <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>][]<span class="keyword">byte</span>),</span><br><span class="line">    kvInt: <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">uint64</span>),</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> i</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<h4 id="FSM"><a href="#FSM" class="headerlink" title="FSM"></a>FSM</h4><p>FMS的功能，②+③不是Raft的核心逻辑。Raft启动时候会有一个后台协程<code>runFSM</code>负责来做下面的三件事，Main线程将应用日志请求放到<code>fsmMutateCh</code>里面，将打快照的请求放到<code>fsmSnapshotCh</code>里面，不阻塞Main</p>
-<p>① 应用日志，raft log多数派已经确认，就可以应用到底层存储了。</p>
-<p>② 快照</p>
-<p>③ 节点恢复</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> FSM <span class="keyword">interface</span> &#123;</span><br><span class="line">  Apply(*Log) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">  Snapshot() (FSMSnapshot, error)</span><br><span class="line">  Restore(io.ReadCloser) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">runFSM</span><span class="params">()</span></span> &#123;</span><br><span class="line">  commitSingle := <span class="function"><span class="keyword">func</span><span class="params">(req *commitTuple)</span></span>&#123;...&#125;</span><br><span class="line">  commitBatch := <span class="function"><span class="keyword">func</span><span class="params">(reqs []*commitTuple)</span></span>&#123;...&#125;</span><br><span class="line">  restore := <span class="function"><span class="keyword">func</span><span class="params">(req *restoreFuture)</span></span>&#123;...&#125;</span><br><span class="line">  snapshot := <span class="function"><span class="keyword">func</span><span class="params">(req *reqSnapshotFuture)</span></span>&#123;...&#125;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> ptr := &lt;-r.fsmMutateCh:</span><br><span class="line">      <span class="keyword">switch</span> req := ptr.(<span class="keyword">type</span>) &#123;</span><br><span class="line">      <span class="keyword">case</span> []*commitTuple:</span><br><span class="line">        commitBatch(req)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">case</span> *restoreFuture:</span><br><span class="line">        restore(req)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">default</span>:</span><br><span class="line">        <span class="built_in">panic</span>(fmt.Errorf(<span class="string">&quot;bad type passed to fsmMutateCh: %#v&quot;</span>, ptr))</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> req := &lt;-r.fsmSnapshotCh:</span><br><span class="line">      snapshot(req)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> &lt;-r.shutdownCh:</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>snapshot不是重点，所以先简单介绍下，后续重读的时候补上这一模块。下一篇我们来看最重要的Raft的逻辑。</p>
-]]></content>
-      <tags>
-        <tag>raft</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>blog折腾记录</title>
-    <url>/2021/12/17/blog%E9%83%A8%E7%BD%B2%E7%AF%87/</url>
-    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>最近开始重拾写blog的习惯，想着坚持点啥吧。</p>
-<p>结果将github上的网站打开，2020-03最近一篇，现在可是2021-12月了，搁置了1年9个月，真行。</p>
-<p>然后打算上传一篇blog，发现新电脑上环境也没有了。大脑开始高速运转，好吧~ 完全没有一点映像。</p>
-<p>因此，打算乖乖的写文章记录，好记性不如烂笔头，先人们不曾欺我啊~</p>
-<h4 id="操作记录"><a href="#操作记录" class="headerlink" title="操作记录"></a>操作记录</h4><p>之前还折腾什么mweb，一键部署多个平台啥的。现在可能是思想观念变了，内容平台还是以内容为主。既然都花了那么多心思写了，难道还不能去各个平台溜达一圈导入下吗。</p>
-<h5 id="用什么写？"><a href="#用什么写？" class="headerlink" title="用什么写？"></a>用什么写？</h5><blockquote>
-<p>Typero</p>
-</blockquote>
-<h5 id="用什么图床？"><a href="#用什么图床？" class="headerlink" title="用什么图床？"></a>用什么图床？</h5><blockquote>
-<p> 路过图床。就是觉得剪贴板直接ctrl+v很方便，懒得换。</p>
-</blockquote>
-<h5 id="发布到哪"><a href="#发布到哪" class="headerlink" title="发布到哪"></a>发布到哪</h5><p>原则就是支持MD导入</p>
-<ul>
-<li>github，可以去百度智能云上去申请一个域名，便宜的一年就13元，不过续费比较贵☺️。 –  算了，实名认证啥的麻烦。</li>
-<li>csdn</li>
-<li>cnblog(不支持MD导入，有点愁人)</li>
-<li>简书(不支持MD导入，放弃)</li>
+<p><a href="https://imgtu.com/i/oO0Ein"><img src="https://s4.ax1x.com/2021/12/13/oO0Ein.png" alt="oO0Ein.png"></a></p>
+<h4 id="新建Raft节点逻辑？"><a href="#新建Raft节点逻辑？" class="headerlink" title="新建Raft节点逻辑？"></a>新建Raft节点逻辑？</h4><ul>
+<li><p>① 校验配置</p>
+</li>
+<li><p>② 获取当前任期，从StableStore中获取</p>
+</li>
+<li><p>③ 获取最近的日志号和具体Log，从LogStore中获取</p>
+</li>
+<li><p>④ 创建Buffer applyCh，用来应用Log到FSM。这里Future的应用可以学习下，后面写applyLog的时候可以详细分析。</p>
+</li>
+<li><p>⑤ 初始化Raft结构。</p>
+</li>
+<li><p>⑥ Set各种变量，这里可以研究下config是怎么实现线程安全的变更。</p>
+</li>
+<li><p>⑦ 尝试从备份中恢复，处理peer变更日志，eg：添加节点、删除节点。这里为啥只处理Peer变更信息，都已经将Log解析出来了，为啥不直接应用呢？</p>
+</li>
+<li><p>⑧ 给传输层注册心跳处理器。在这里初始化，而不是在goroutine里面处理，是为了避免队头阻塞。</p>
+</li>
+<li><p>⑨ 启动goroutine，如下启动了3个协程。</p>
+<p><a href="https://imgtu.com/i/oOhDud"><img src="https://s4.ax1x.com/2021/12/13/oOhDud.png" alt="oOhDud.png"></a></p>
+</li>
 </ul>
-<h5 id="hexo与github配置"><a href="#hexo与github配置" class="headerlink" title="hexo与github配置"></a>hexo与github配置</h5><p>说起来我之前弄过一版，但是完成忘记了。更惨的是git仓库的东西都不知道怎么复用，只能完全重来，就当是一个新的开始好了。</p>
-<p>先将一次性的操作做了，安装&amp;配置。配置文件只有2个，一定要做好备份</p>
-<p>_config.yml: 网站配置</p>
-<p>themes/next/_config.yml：主题配置</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> mac上安装hexo</span></span><br><span class="line">brew install hexo</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 初始化项目</span></span><br><span class="line">hexo init myblog</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> git <span class="built_in">clone</span> next主题</span></span><br><span class="line">git clone https://github.com/theme-next/hexo-theme-next themes/next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制化配置 _config.yml</span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># site： 这力的language要和主题里面的themes/next/languages下面的文件能对应才行</span></span></span><br><span class="line">title: Moonshine&#x27;s Blog</span><br><span class="line">subtitle: &#x27;日拱一卒无有尽，功不唐捐终入海&#x27;</span><br><span class="line">description: &#x27;風が吹いて葉が落ち、落ち葉は土壌の肥やしとなり土壌を肥えさせ、果物がゆっくりと着実に育つのです&#x27;</span><br><span class="line">keywords: &#x27;数据库&#x27;</span><br><span class="line">author: Moonshine</span><br><span class="line">language: zh-CN</span><br><span class="line">timezone: &#x27;&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># url</span></span></span><br><span class="line">url: https://zhangtinglu.github.io/</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 主题</span></span></span><br><span class="line">theme: next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 部署git</span></span></span><br><span class="line">deploy:</span><br><span class="line">  type: &#x27;git&#x27;</span><br><span class="line">  repo: &#x27;https://github.com/zhangtinglu/zhangtinglu.github.io&#x27;</span><br><span class="line">  branch: &#x27;master&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 代码语法高亮，将prismjs改成true就行了</span></span></span><br><span class="line">prismjs:</span><br><span class="line">  enable: true </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制theme配置 themes/next/_config.yml -- 有点多，直接备份吧</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 把自己需要的需要的page安装下</span></span><br><span class="line">hexo new page about</span><br><span class="line">hexo new page tags</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 首页摘要 -- 太费劲了，直接用归档页面当成主页</span></span><br><span class="line">~/myblog/themes/next/layout </span><br><span class="line">mv index.swig index_bak.swig</span><br><span class="line">cp archive.swig index.swig</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 代码可折叠 - 收缩</span></span><br><span class="line">codeblock:</span><br><span class="line">  highlight_theme: night</span><br><span class="line"><span class="meta">#</span><span class="bash"> 显得太大了 -- 不管能看就行</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 文章目录</span></span><br><span class="line">toc:</span><br><span class="line">  expand_all: true</span><br></pre></td></tr></table></figure>
+<p>代码如下</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewRaft</span><span class="params">(conf *Config, fsm FSM, logs LogStore, stable StableStore, snaps SnapshotStore, trans Transport)</span> <span class="params">(*Raft, error)</span></span> &#123;</span><br><span class="line">  <span class="comment">// ① 校验配置</span></span><br><span class="line">  <span class="keyword">if</span> err := ValidateConfig(conf); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ② 获取当前任务，这里是从StableStore中获取</span></span><br><span class="line">  currentTerm, err := stable.GetUint64(keyCurrentTerm)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ③ 获取最近的日志号和具体Log，从LogStore中获取；</span></span><br><span class="line">  lastIndex, err := logs.LastIndex()</span><br><span class="line">  <span class="keyword">if</span> err = logs.GetLog(lastIndex, &amp;lastLog); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">&quot;failed to get last log at index %d: %v&quot;</span>, lastIndex, err)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ④ 创建Buffer applyCh，用来应用Log到FSM。这里Future的应用可以学习下。</span></span><br><span class="line">  applyCh := <span class="built_in">make</span>(<span class="keyword">chan</span> *logFuture)</span><br><span class="line">  <span class="keyword">if</span> conf.BatchApplyCh &#123;</span><br><span class="line">    applyCh = <span class="built_in">make</span>(<span class="keyword">chan</span> *logFuture, conf.MaxAppendEntries)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑤ 初始化Raft结构。</span></span><br><span class="line">  r := &amp;Raft&#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑥ Set各种变量，下面这一行的实现可以研究下，为啥不直接r.conf = conf</span></span><br><span class="line">  r.conf.Store(*conf)</span><br><span class="line">  r.setState(Follower)</span><br><span class="line">  r.setCurrentTerm(currentTerm)</span><br><span class="line">  r.setLastLog(lastLog.Index, lastLog.Term)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑦ 尝试从备份中恢复，处理peer变更日志，eg：添加节点、删除节点. </span></span><br><span class="line">  <span class="keyword">if</span> err := r.restoreSnapshot(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">  &#125;</span><br><span class="line">  snapshotIndex, _ := r.getLastSnapshot()</span><br><span class="line">  <span class="keyword">for</span> index := snapshotIndex + <span class="number">1</span>; index &lt;= lastLog.Index; index++ &#123;</span><br><span class="line">    <span class="keyword">var</span> entry Log</span><br><span class="line">    <span class="keyword">if</span> err := r.logs.GetLog(index, &amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> err := r.processConfigurationLogEntry(&amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// ⑧ 给传输层注册心跳处理器</span></span><br><span class="line">  trans.SetHeartbeatHandler(r.processHeartbeat)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑨ 启动goroutine</span></span><br><span class="line">  r.goFunc(r.run)</span><br><span class="line">  r.goFunc(r.runFSM)</span><br><span class="line">  r.goFunc(r.runSnapshots)</span><br><span class="line">  <span class="keyword">return</span> r, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
-<p>接着就是平常使用了，创建blog-deploy</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先将hello world这个page删除</span></span><br><span class="line">rm -rf /source/_posts/hello-world.md</span><br><span class="line">hexo new &#x27;blog&#x27;</span><br><span class="line">hexo s</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure>
+<p>至此，我们就将Raft节点启动起来了</p>
+<h4 id="技术点1：atomic-Value"><a href="#技术点1：atomic-Value" class="headerlink" title="技术点1：atomic.Value"></a>技术点1：atomic.Value</h4><p><img src="https://blog.betacat.io/image/golang-atomic-value/atomic-value-store.drawio.png" alt="atomic.Value Store 流程"></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// conf这个变量会涉及到多个goroutine的并发修改&amp;读取。</span></span><br><span class="line"><span class="comment">// 为了保证读写的原子性，通常我们会加锁。但是加锁又有点过重了，为了更加高效的实现，使用了atomic。</span></span><br><span class="line">conf atomic.Value</span><br><span class="line">r.conf.Store(*conf)</span><br></pre></td></tr></table></figure>
 
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>真的前端做到最后会疯，太容易产生强迫症了。</p>
-<p>啥也不说了，重复性劳动，如果换个电脑，直接将整个项目备份。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 8个写routine + 1个读routine</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">TestAtomic</span><span class="params">(t *testing.T)</span></span> &#123;</span><br><span class="line">  <span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line">  <span class="keyword">var</span> gloMy = my&#123;&#125;</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">8</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      wg.Add(<span class="number">1</span>)</span><br><span class="line">      <span class="keyword">for</span> &#123;</span><br><span class="line">        tmp := rand.Uint64() % <span class="number">100</span></span><br><span class="line">        gloMy.v1 = tmp</span><br><span class="line">        <span class="comment">// 在这两次操作之间就会产生中间状态，这个状态就很奇怪没有意义</span></span><br><span class="line">        gloMy.v2 = fmt.Sprintf(<span class="string">&quot;s%d&quot;</span>, tmp)</span><br><span class="line">      &#125;</span><br><span class="line">      wg.Done()</span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  wg.Add(<span class="number">1</span>)</span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">      t.Log(gloMy.v1, gloMy.v2)</span><br><span class="line">    &#125;</span><br><span class="line">    wg.Done()</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  wg.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">=== RUN   TestAtomic</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">75</span> s64 <span class="comment">// 不合符预期，脏读了</span></span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">63</span> s63</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">48</span> s48</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">5</span> s5</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">1</span> s1</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://blog.betacat.io/post/golang-atomic-value-exploration/">推荐一篇文章</a> ：文中将atomic的来龙去脉都解释了一遍。</p>
+<h4 id="技术点2：队头阻塞"><a href="#技术点2：队头阻塞" class="headerlink" title="技术点2：队头阻塞"></a>技术点2：队头阻塞</h4><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 这行的位置，在goroutine启动之前注册HeartbeatHandler处理器</span></span><br><span class="line">trans.SetHeartbeatHandler(r.processHeartbeat)</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="小小疑问❓"><a href="#小小疑问❓" class="headerlink" title="小小疑问❓"></a>小小疑问❓</h4><p>Q: 为啥要叫FSM，我的理解FSM不就是类似于MySQL这种可以应用Log的地方吗？总感觉用状态机命名怪怪的，容易误会。</p>
+<p>Q: Config 和 Configuration的区别? Config里面都是单个Raft节点的配置，比如超时之类的；Configuration是Raft Cluster相关的信息，比如有几个节点之类的。</p>
+<p>​           </p>
 ]]></content>
       <tags>
-        <tag>hexo配置</tag>
+        <tag>raft</tag>
       </tags>
   </entry>
   <entry>
@@ -415,68 +176,307 @@
       </tags>
   </entry>
   <entry>
-    <title>hashicorp:raft源码系列(1)--导读</title>
-    <url>/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-1-%E5%AF%BC%E8%AF%BB/</url>
-    <content><![CDATA[<h3 id="Raft是干啥的？"><a href="#Raft是干啥的？" class="headerlink" title="Raft是干啥的？"></a>Raft是干啥的？</h3><p><a href="http://thesecretlivesofdata.com/raft/">动画说明</a></p>
-<p>简述如下图：用户SET 5，3个不同节点都能获取SET 5的操作。所谓的最简单的分布式一致性。</p>
-<p><a href="https://imgtu.com/i/oO3r0P"><img src="https://s4.ax1x.com/2021/12/13/oO3r0P.png" alt="oO3r0P.png"></a></p>
-<h3 id="Raft项目包含哪些模块？"><a href="#Raft项目包含哪些模块？" class="headerlink" title="Raft项目包含哪些模块？"></a>Raft项目包含哪些模块？</h3><h4 id="项目有多少行"><a href="#项目有多少行" class="headerlink" title="项目有多少行?"></a>项目有多少行?</h4><p>分析下整个项目大概是1W多行，并不是很大，代码注释非常齐全，理解起来比较轻松。代码抽象得很好，非常值得学习。</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">-&gt;</span><span class="bash"> % cloc ./</span></span><br><span class="line">      77 text files.</span><br><span class="line">      77 unique files.</span><br><span class="line">       8 files ignored.</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 1.90  T=0.09 s (814.1 files/s, 201614.7 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Go                              57           2207           2786          11864</span><br><span class="line">Markdown                         4            106              0            255</span><br><span class="line">YAML                             4             26             29            141</span><br><span class="line">XML                              4              0              0            108</span><br><span class="line">make                             1             10              2             33</span><br><span class="line">Bourne Shell                     1              3              3             10</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                            71           2352           2820          12411</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+    <title>hashicorp:raft源码系列(3)--存储层</title>
+    <url>/2021/12/17/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-3-%E5%AD%98%E5%82%A8%E5%B1%82/</url>
+    <content><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>接着上一篇我们讲了网络层，接下来我们来讲<code>LogStore、StableStore、FSM、SnapshotStore</code>，为啥这些一起讲呢，因为这些都是存储相关，并且功能相对简单，并没有像<code>Transport</code>那样有<code>NetworkTransport</code>实现可以用来进行分析。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">func</span> <span class="title">NewRaft</span><span class="params">(conf *Config, fsm FSM, logs LogStore, stable StableStore, snaps SnapshotStore, trans Transport)</span> <span class="params">(*Raft, error)</span></span> &#123;     	......&#125;</span><br></pre></td></tr></table></figure>
 
-<h4 id="从哪里开始？"><a href="#从哪里开始？" class="headerlink" title="从哪里开始？"></a>从哪里开始？</h4><p>首先，我们来看下<code>api.go/Raft</code>结构，表示的是一个Raft节点，最核心的数据结构。划分3大块</p>
-<ol>
-<li><p>NewRaft节点需要的信息：下图中标红点的，几大核心组成。下一篇我们从网络层开始详细分析。</p>
-<blockquote>
-<p>除了raftState，其他部分全是interface，模块抽象的很细致。</p>
-</blockquote>
-</li>
-<li><p>Leader操作相关：整个Raft最核心的就是Leader的状态转换过程。我们后续也会对这一部分的实现做详细说明。</p>
-</li>
-<li><p>一些异步操作：这一块是嵌入在各个模块的实现中的。项目里面一些chan的使用也是值得学习的。</p>
-</li>
-</ol>
-<p><a href="https://imgtu.com/i/oO0Ein"><img src="https://s4.ax1x.com/2021/12/13/oO0Ein.png" alt="oO0Ein.png"></a></p>
-<h4 id="新建Raft节点逻辑？"><a href="#新建Raft节点逻辑？" class="headerlink" title="新建Raft节点逻辑？"></a>新建Raft节点逻辑？</h4><ul>
-<li><p>① 校验配置</p>
-</li>
-<li><p>② 获取当前任期，从StableStore中获取</p>
-</li>
-<li><p>③ 获取最近的日志号和具体Log，从LogStore中获取</p>
-</li>
-<li><p>④ 创建Buffer applyCh，用来应用Log到FSM。这里Future的应用可以学习下，后面写applyLog的时候可以详细分析。</p>
-</li>
-<li><p>⑤ 初始化Raft结构。</p>
-</li>
-<li><p>⑥ Set各种变量，这里可以研究下config是怎么实现线程安全的变更。</p>
-</li>
-<li><p>⑦ 尝试从备份中恢复，处理peer变更日志，eg：添加节点、删除节点。这里为啥只处理Peer变更信息，都已经将Log解析出来了，为啥不直接应用呢？</p>
-</li>
-<li><p>⑧ 给传输层注册心跳处理器。在这里初始化，而不是在goroutine里面处理，是为了避免队头阻塞。</p>
-</li>
-<li><p>⑨ 启动goroutine，如下启动了3个协程。</p>
-<p><a href="https://imgtu.com/i/oOhDud"><img src="https://s4.ax1x.com/2021/12/13/oOhDud.png" alt="oOhDud.png"></a></p>
-</li>
-</ul>
-<p>代码如下</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewRaft</span><span class="params">(conf *Config, fsm FSM, logs LogStore, stable StableStore, snaps SnapshotStore, trans Transport)</span> <span class="params">(*Raft, error)</span></span> &#123;</span><br><span class="line">  <span class="comment">// ① 校验配置</span></span><br><span class="line">  <span class="keyword">if</span> err := ValidateConfig(conf); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ② 获取当前任务，这里是从StableStore中获取</span></span><br><span class="line">  currentTerm, err := stable.GetUint64(keyCurrentTerm)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ③ 获取最近的日志号和具体Log，从LogStore中获取；</span></span><br><span class="line">  lastIndex, err := logs.LastIndex()</span><br><span class="line">  <span class="keyword">if</span> err = logs.GetLog(lastIndex, &amp;lastLog); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">&quot;failed to get last log at index %d: %v&quot;</span>, lastIndex, err)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ④ 创建Buffer applyCh，用来应用Log到FSM。这里Future的应用可以学习下。</span></span><br><span class="line">  applyCh := <span class="built_in">make</span>(<span class="keyword">chan</span> *logFuture)</span><br><span class="line">  <span class="keyword">if</span> conf.BatchApplyCh &#123;</span><br><span class="line">    applyCh = <span class="built_in">make</span>(<span class="keyword">chan</span> *logFuture, conf.MaxAppendEntries)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑤ 初始化Raft结构。</span></span><br><span class="line">  r := &amp;Raft&#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑥ Set各种变量，下面这一行的实现可以研究下，为啥不直接r.conf = conf</span></span><br><span class="line">  r.conf.Store(*conf)</span><br><span class="line">  r.setState(Follower)</span><br><span class="line">  r.setCurrentTerm(currentTerm)</span><br><span class="line">  r.setLastLog(lastLog.Index, lastLog.Term)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑦ 尝试从备份中恢复，处理peer变更日志，eg：添加节点、删除节点. </span></span><br><span class="line">  <span class="keyword">if</span> err := r.restoreSnapshot(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">  &#125;</span><br><span class="line">  snapshotIndex, _ := r.getLastSnapshot()</span><br><span class="line">  <span class="keyword">for</span> index := snapshotIndex + <span class="number">1</span>; index &lt;= lastLog.Index; index++ &#123;</span><br><span class="line">    <span class="keyword">var</span> entry Log</span><br><span class="line">    <span class="keyword">if</span> err := r.logs.GetLog(index, &amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> err := r.processConfigurationLogEntry(&amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// ⑧ 给传输层注册心跳处理器</span></span><br><span class="line">  trans.SetHeartbeatHandler(r.processHeartbeat)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ⑨ 启动goroutine</span></span><br><span class="line">  r.goFunc(r.run)</span><br><span class="line">  r.goFunc(r.runFSM)</span><br><span class="line">  r.goFunc(r.runSnapshots)</span><br><span class="line">  <span class="keyword">return</span> r, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="StableStore"><a href="#StableStore" class="headerlink" title="StableStore"></a>StableStore</h4><p>这个组件主要就是为了安全考虑而存在的，提供一个可以持久化k-v的存储的即可。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> StableStore <span class="keyword">interface</span> &#123;</span><br><span class="line">  Set(key []<span class="keyword">byte</span>, val []<span class="keyword">byte</span>) error</span><br><span class="line">  Get(key []<span class="keyword">byte</span>) ([]<span class="keyword">byte</span>, error)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// uint64是日志号和任期定义的类型，方便存</span></span><br><span class="line">  SetUint64(key []<span class="keyword">byte</span>, val <span class="keyword">uint64</span>) error</span><br><span class="line">  GetUint64(key []<span class="keyword">byte</span>) (<span class="keyword">uint64</span>, error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
-<p>至此，我们就将Raft节点启动起来了</p>
-<h4 id="技术点1：atomic-Value"><a href="#技术点1：atomic-Value" class="headerlink" title="技术点1：atomic.Value"></a>技术点1：atomic.Value</h4><p><img src="https://blog.betacat.io/image/golang-atomic-value/atomic-value-store.drawio.png" alt="atomic.Value Store 流程"></p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// conf这个变量会涉及到多个goroutine的并发修改&amp;读取。</span></span><br><span class="line"><span class="comment">// 为了保证读写的原子性，通常我们会加锁。但是加锁又有点过重了，为了更加高效的实现，使用了atomic。</span></span><br><span class="line">conf atomic.Value</span><br><span class="line">r.conf.Store(*conf)</span><br></pre></td></tr></table></figure>
+<h4 id="LogStore"><a href="#LogStore" class="headerlink" title="LogStore"></a>LogStore</h4><p>这个组件就是为了存日志的，比如用户发过来<code>set a=1</code>, 将这个存起来即可。和上面的<code>StableStore</code>能力是同一种，不过日志可能比较多，需要根据实现情况进行选择。项目在测试的时候实现了一个<code>inmem</code>的日志存储，用了一个<code>map</code>来进行存储。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// inmem模拟，直接map存，基本能力-读写。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewInmemStore</span><span class="params">()</span> *<span class="title">InmemStore</span></span> &#123;</span><br><span class="line">  i := &amp;InmemStore&#123;</span><br><span class="line">    logs:  <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">uint64</span>]*Log),</span><br><span class="line">    kv:    <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>][]<span class="keyword">byte</span>),</span><br><span class="line">    kvInt: <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">uint64</span>),</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> i</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 8个写routine + 1个读routine</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">TestAtomic</span><span class="params">(t *testing.T)</span></span> &#123;</span><br><span class="line">  <span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line">  <span class="keyword">var</span> gloMy = my&#123;&#125;</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">8</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      wg.Add(<span class="number">1</span>)</span><br><span class="line">      <span class="keyword">for</span> &#123;</span><br><span class="line">        tmp := rand.Uint64() % <span class="number">100</span></span><br><span class="line">        gloMy.v1 = tmp</span><br><span class="line">        <span class="comment">// 在这两次操作之间就会产生中间状态，这个状态就很奇怪没有意义</span></span><br><span class="line">        gloMy.v2 = fmt.Sprintf(<span class="string">&quot;s%d&quot;</span>, tmp)</span><br><span class="line">      &#125;</span><br><span class="line">      wg.Done()</span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  wg.Add(<span class="number">1</span>)</span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">      t.Log(gloMy.v1, gloMy.v2)</span><br><span class="line">    &#125;</span><br><span class="line">    wg.Done()</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  wg.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">=== RUN   TestAtomic</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">75</span> s64 <span class="comment">// 不合符预期，脏读了</span></span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">63</span> s63</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">48</span> s48</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">5</span> s5</span><br><span class="line">    tmp_test.<span class="keyword">go</span>:<span class="number">33</span>: <span class="number">1</span> s1</span><br></pre></td></tr></table></figure>
+<h4 id="FSM"><a href="#FSM" class="headerlink" title="FSM"></a>FSM</h4><p>FMS的功能，②+③不是Raft的核心逻辑。Raft启动时候会有一个后台协程<code>runFSM</code>负责来做下面的三件事，Main线程将应用日志请求放到<code>fsmMutateCh</code>里面，将打快照的请求放到<code>fsmSnapshotCh</code>里面，不阻塞Main</p>
+<p>① 应用日志，raft log多数派已经确认，就可以应用到底层存储了。</p>
+<p>② 快照</p>
+<p>③ 节点恢复</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> FSM <span class="keyword">interface</span> &#123;</span><br><span class="line">  Apply(*Log) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">  Snapshot() (FSMSnapshot, error)</span><br><span class="line">  Restore(io.ReadCloser) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p><a href="https://blog.betacat.io/post/golang-atomic-value-exploration/">推荐一篇文章</a> ：文中将atomic的来龙去脉都解释了一遍。</p>
-<h4 id="技术点2：队头阻塞"><a href="#技术点2：队头阻塞" class="headerlink" title="技术点2：队头阻塞"></a>技术点2：队头阻塞</h4><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 这行的位置，在goroutine启动之前注册HeartbeatHandler处理器</span></span><br><span class="line">trans.SetHeartbeatHandler(r.processHeartbeat)</span><br></pre></td></tr></table></figure>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">runFSM</span><span class="params">()</span></span> &#123;</span><br><span class="line">  commitSingle := <span class="function"><span class="keyword">func</span><span class="params">(req *commitTuple)</span></span>&#123;...&#125;</span><br><span class="line">  commitBatch := <span class="function"><span class="keyword">func</span><span class="params">(reqs []*commitTuple)</span></span>&#123;...&#125;</span><br><span class="line">  restore := <span class="function"><span class="keyword">func</span><span class="params">(req *restoreFuture)</span></span>&#123;...&#125;</span><br><span class="line">  snapshot := <span class="function"><span class="keyword">func</span><span class="params">(req *reqSnapshotFuture)</span></span>&#123;...&#125;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> ptr := &lt;-r.fsmMutateCh:</span><br><span class="line">      <span class="keyword">switch</span> req := ptr.(<span class="keyword">type</span>) &#123;</span><br><span class="line">      <span class="keyword">case</span> []*commitTuple:</span><br><span class="line">        commitBatch(req)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">case</span> *restoreFuture:</span><br><span class="line">        restore(req)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">default</span>:</span><br><span class="line">        <span class="built_in">panic</span>(fmt.Errorf(<span class="string">&quot;bad type passed to fsmMutateCh: %#v&quot;</span>, ptr))</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> req := &lt;-r.fsmSnapshotCh:</span><br><span class="line">      snapshot(req)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> &lt;-r.shutdownCh:</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-
-
-<h4 id="小小疑问❓"><a href="#小小疑问❓" class="headerlink" title="小小疑问❓"></a>小小疑问❓</h4><p>Q: 为啥要叫FSM，我的理解FSM不就是类似于MySQL这种可以应用Log的地方吗？总感觉用状态机命名怪怪的，容易误会。</p>
-<p>Q: Config 和 Configuration的区别? Config里面都是单个Raft节点的配置，比如超时之类的；Configuration是Raft Cluster相关的信息，比如有几个节点之类的。</p>
-<p>​           </p>
+<p>snapshot不是重点，所以先简单介绍下，后续重读的时候补上这一模块。下一篇我们来看最重要的Raft的逻辑。</p>
 ]]></content>
       <tags>
         <tag>raft</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hashicorp-raft源码系列-4-leader逻辑</title>
+    <url>/2021/12/20/hashicorp-raft%E6%BA%90%E7%A0%81%E7%B3%BB%E5%88%97-4-leader%E9%80%BB%E8%BE%91/</url>
+    <content><![CDATA[<p>前面三篇我们分别介绍了Raft的API、网络层、存储层，从这一篇开始我们来看Raft的<code>Leader、Candidate、Follower</code>实现。</p>
+<h4 id="r-runLeader逻辑"><a href="#r-runLeader逻辑" class="headerlink" title="r.runLeader逻辑"></a>r.runLeader逻辑</h4><p>事务提交的过程：接着我们一点点分析，</p>
+<h5 id="发送请求，Apply方法"><a href="#发送请求，Apply方法" class="headerlink" title="发送请求，Apply方法"></a>发送请求，Apply方法</h5><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Apply</span></span><br><span class="line"><span class="comment">//  -&gt; ApplyLog</span></span><br><span class="line"><span class="comment">// 写的时候也不需要返回什么，主要就是Check Error</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">ApplyLog</span><span class="params">(log Log, timeout time.Duration)</span> <span class="title">ApplyFuture</span></span> &#123;</span><br><span class="line">  logFuture := &amp;logFuture&#123;</span><br><span class="line">    log: Log&#123;</span><br><span class="line">      Type:       LogCommand,</span><br><span class="line">      Data:       log.Data,</span><br><span class="line">      Extensions: log.Extensions,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;</span><br><span class="line">  logFuture.init()</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  ...</span><br><span class="line">  <span class="comment">// 这个写法很有意思，到底是什么意思呢？放到applyCh马上返回，这个时候return logFuture不一定有数据的吧，client怎么判断操作是成功还是失败呢。</span></span><br><span class="line">  <span class="keyword">case</span> r.applyCh &lt;- logFuture:</span><br><span class="line">    <span class="keyword">return</span> logFuture</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="runLeader"><a href="#runLeader" class="headerlink" title="runLeader()"></a>runLeader()</h5><p>接着我们看下leader初始化的时候会干些啥，重点看下初始化的后台处理协程。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span> <span class="title">runLeader</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="comment">// ?? leaderCh这个chan还真的是不知道干啥的，后面有时间在重点看下</span></span><br><span class="line">  overrideNotifyBool(r.leaderCh, <span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// setup leader state，主要是节点的信息</span></span><br><span class="line">  r.setupLeaderState()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 定义清理逻辑</span></span><br><span class="line">  <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">   ...</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 重点：为每一个peer启动一个Log复制协程，</span></span><br><span class="line">  r.startStopReplication()</span><br><span class="line">  <span class="comment">//  调用-&gt; r.goFunc(func() &#123; r.replicate(s) &#125;)</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 开始leader循环</span></span><br><span class="line">  r.leaderLoop()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Leader消费r-applyCh"><a href="#Leader消费r-applyCh" class="headerlink" title="Leader消费r.applyCh"></a>Leader消费r.applyCh</h5><p>将客户端的写凑成一批，</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">case</span> newLog := &lt;-r.applyCh:</span><br><span class="line">  <span class="comment">// Group commit, 组提交</span></span><br><span class="line">  ready := []*logFuture&#123;newLog&#125;</span><br><span class="line">GROUP_COMMIT_LOOP:</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; r.config().MaxAppendEntries; i++ &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> newLog := &lt;-r.applyCh:</span><br><span class="line">      ready = <span class="built_in">append</span>(ready, newLog)</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">break</span> GROUP_COMMIT_LOOP</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Dispatch the logs</span></span><br><span class="line">  <span class="keyword">if</span> stepDown &#123;</span><br><span class="line">     ....</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    r.dispatchLogs(ready)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>接着看看dispatchLogs逻辑</p>
+<p>加r.leaderState.inflight list, 表示需要处理的applyLogs</p>
+<p>日志持久化 r.logs.StoreLogs(logs)，类比mysql 持久化redo log</p>
+<p>将自己的log index往前，并且通知<code>commitCh</code></p>
+<p>持久化lastIndex，r.setLastLog(lastIndex, term)</p>
+<p>通知每个replication新Log –  asyncNotifyCh(f.triggerCh)  </p>
+<p>接着就是上面的初始化的时候干的事情了，给每个channel发消息</p>
+<p>想想哪些是异步的？为啥要异步处理呢？</p>
+<p>搞清楚重点</p>
+<p>下面的<code>observe</code>是干啥的？</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">r.observe(LeaderObservation&#123;Leader: leader&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>client 写请求 :api.go   Apply方法，返回一个ApplyFuture对象，包含req、response、error</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<p>–&gt;  发消息 append entity –&gt; 多数派的回复  – &gt; 客户端返回  –&gt; 应用FSM(另一个流程)–&gt; 通知其他节点可以应用 –</p>
+<p>client返回的标准是啥？日志多数派 or  Master apply成功(不可能)   </p>
+<p>认真琢磨其中的优化</p>
+<h4 id="问题记录"><a href="#问题记录" class="headerlink" title="问题记录"></a>问题记录</h4><p>1、chan里面只有一个元素，并且不能并发调用。下面代码的理解，到底是怎么避免并发调用的？还有别的实现吗？这个实现是不是有点trick？</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">overrideNotifyBool</span><span class="params">(ch <span class="keyword">chan</span> <span class="keyword">bool</span>, v <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  <span class="keyword">case</span> ch &lt;- v:</span><br><span class="line">    <span class="comment">// value sent, all done</span></span><br><span class="line">  <span class="keyword">case</span> &lt;-ch:</span><br><span class="line">    <span class="comment">// channel had an old value</span></span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> ch &lt;- v:</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">&quot;race: channel was sent concurrently&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2、<code>leaderLoop</code>这个里面全是异步的chan，代码规划的非常好，很值得学习</p>
+]]></content>
+      <tags>
+        <tag>raft</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>blog折腾记录</title>
+    <url>/2021/12/17/blog%E9%83%A8%E7%BD%B2%E7%AF%87/</url>
+    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>最近开始重拾写blog的习惯，想着坚持点啥吧。</p>
+<p>结果将github上的网站打开，2020-03最近一篇，现在可是2021-12月了，搁置了1年9个月，真行。</p>
+<p>然后打算上传一篇blog，发现新电脑上环境也没有了。大脑开始高速运转，好吧~ 完全没有一点映像。</p>
+<p>因此，打算乖乖的写文章记录，好记性不如烂笔头，先人们不曾欺我啊~</p>
+<h4 id="操作记录"><a href="#操作记录" class="headerlink" title="操作记录"></a>操作记录</h4><p>之前还折腾什么mweb，一键部署多个平台啥的。现在可能是思想观念变了，内容平台还是以内容为主。既然都花了那么多心思写了，难道还不能去各个平台溜达一圈导入下吗。</p>
+<h5 id="用什么写？"><a href="#用什么写？" class="headerlink" title="用什么写？"></a>用什么写？</h5><blockquote>
+<p>Typero</p>
+</blockquote>
+<h5 id="用什么图床？"><a href="#用什么图床？" class="headerlink" title="用什么图床？"></a>用什么图床？</h5><blockquote>
+<p> 路过图床。就是觉得剪贴板直接ctrl+v很方便，懒得换。</p>
+</blockquote>
+<h5 id="发布到哪"><a href="#发布到哪" class="headerlink" title="发布到哪"></a>发布到哪</h5><p>原则就是支持MD导入</p>
+<ul>
+<li>github，可以去百度智能云上去申请一个域名，便宜的一年就13元，不过续费比较贵☺️。 –  算了，实名认证啥的麻烦。</li>
+<li>csdn</li>
+<li>cnblog(不支持MD导入，有点愁人)</li>
+<li>简书(不支持MD导入，放弃)</li>
+</ul>
+<h5 id="hexo与github配置"><a href="#hexo与github配置" class="headerlink" title="hexo与github配置"></a>hexo与github配置</h5><p>说起来我之前弄过一版，但是完成忘记了。更惨的是git仓库的东西都不知道怎么复用，只能完全重来，就当是一个新的开始好了。</p>
+<p>先将一次性的操作做了，安装&amp;配置。配置文件只有2个，一定要做好备份</p>
+<p>_config.yml: 网站配置</p>
+<p>themes/next/_config.yml：主题配置</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> mac上安装hexo</span></span><br><span class="line">brew install hexo</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 初始化项目</span></span><br><span class="line">hexo init myblog</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> git <span class="built_in">clone</span> next主题</span></span><br><span class="line">git clone https://github.com/theme-next/hexo-theme-next themes/next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制化配置 _config.yml</span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># site： 这力的language要和主题里面的themes/next/languages下面的文件能对应才行</span></span></span><br><span class="line">title: Moonshine&#x27;s Blog</span><br><span class="line">subtitle: &#x27;日拱一卒无有尽，功不唐捐终入海&#x27;</span><br><span class="line">description: &#x27;風が吹いて葉が落ち、落ち葉は土壌の肥やしとなり土壌を肥えさせ、果物がゆっくりと着実に育つのです&#x27;</span><br><span class="line">keywords: &#x27;数据库&#x27;</span><br><span class="line">author: Moonshine</span><br><span class="line">language: zh-CN</span><br><span class="line">timezone: &#x27;&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># url</span></span></span><br><span class="line">url: https://zhangtinglu.github.io/</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 主题</span></span></span><br><span class="line">theme: next</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 部署git</span></span></span><br><span class="line">deploy:</span><br><span class="line">  type: &#x27;git&#x27;</span><br><span class="line">  repo: &#x27;https://github.com/zhangtinglu/zhangtinglu.github.io&#x27;</span><br><span class="line">  branch: &#x27;master&#x27;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 代码语法高亮，将prismjs改成true就行了</span></span></span><br><span class="line">prismjs:</span><br><span class="line">  enable: true </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 定制theme配置 themes/next/_config.yml -- 有点多，直接备份吧</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 把自己需要的需要的page安装下</span></span><br><span class="line">hexo new page about</span><br><span class="line">hexo new page tags</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 首页摘要 -- 太费劲了，直接用归档页面当成主页</span></span><br><span class="line">~/myblog/themes/next/layout </span><br><span class="line">mv index.swig index_bak.swig</span><br><span class="line">cp archive.swig index.swig</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 代码可折叠 - 收缩</span></span><br><span class="line">codeblock:</span><br><span class="line">  highlight_theme: night</span><br><span class="line"><span class="meta">#</span><span class="bash"> 显得太大了 -- 不管能看就行</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 文章目录</span></span><br><span class="line">toc:</span><br><span class="line">  expand_all: true</span><br></pre></td></tr></table></figure>
+
+<p>接着就是平常使用了，创建blog-deploy</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先将hello world这个page删除</span></span><br><span class="line">rm -rf /source/_posts/hello-world.md</span><br><span class="line">hexo new &#x27;blog&#x27;</span><br><span class="line">hexo s</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure>
+
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>真的前端做到最后会疯，太容易产生强迫症了。</p>
+<p>啥也不说了，重复性劳动，如果换个电脑，直接将整个项目备份。</p>
+]]></content>
+      <tags>
+        <tag>hexo配置</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Typora写blog中粘贴图片自动上传图床</title>
+    <url>/2021/12/24/blog%E5%9B%BE%E5%BA%8A%E7%AF%87/</url>
+    <content><![CDATA[<h4 id="Goal"><a href="#Goal" class="headerlink" title="Goal"></a>Goal</h4><p>我电脑上 cmd + trl + a(微信截图) -&gt; 来到Typora(cmd + v) 粘贴。</p>
+<p>然后就自动帮我上传图床，并且替换成图床照片吧，这样我也不需要切换到图床上去捣鼓了，就专注在Typora上去打字。</p>
+<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>图床：<a href="https://blog.svend.cc/upic/tutorials/github/">github</a>、<a href="https://blog.svend.cc/upic/tutorials/gitee/">gitee</a>，我自己比较常用的是路过图床，但是uPic不会配置，那就算啦，佛系找个能成功的。</p>
+<blockquote>
+<p>采坑：github图片可以正常上传，但是展示出来</p>
+</blockquote>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225084632762.png" alt="image-20211225084632762" style="zoom:30%;float:left" />
+
+<p>因此，我们还好折腾Gitee配置。</p>
+<ol>
+<li><p>创建仓库</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225085435762.png" alt="image-20211225085435762" style="zoom:25%;float:left" />
+
+<ol start="2">
+<li>生成私人令牌</li>
+</ol>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225083650340.png" alt="image-20211225083650340" style="zoom:25%;float:left" />
+
+<ol start="3">
+<li><p>配置uPic</p>
+<p>uPic直接github上下载了安装好，然后按照下面的方法配置</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090108133.png" alt="image-20211225090108133" style="zoom:25%;float:left" /></li>
+<li><p>配置Typora</p>
+<p>cmd+,打开软件偏好设置,成功了之后就在写blog的时候直接截图+粘贴吧，巴斯的很~</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211225090323825.png" alt="image-20211225090323825" style="zoom:25%;float:left" /></li>
+</ol>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>Typora</tag>
+        <tag>图片粘贴</tag>
+        <tag>上传图床</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>本地调试proxysql</title>
+    <url>/2021/12/29/%E6%9C%AC%E5%9C%B0%E8%B0%83%E8%AF%95proxysql/</url>
+    <content><![CDATA[<h4 id="1-构建镜像"><a href="#1-构建镜像" class="headerlink" title="1. 构建镜像"></a>1. 构建镜像</h4><p>Dockerfile + 构建镜像</p>
+<figure class="highlight dockerfile"><table><tr><td class="code"><pre><span class="line"><span class="keyword">FROM</span> centos:<span class="number">7</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">LABEL</span><span class="bash"> description=<span class="string">&quot;Container for dev &amp; debug&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装依赖</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -y automake bzip2 cmake make gcc-c++ gcc git openssl openssl-devel gnutls gnutls-devel libtool patch openssh-server perl-IPC-Cmd</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -y gdb-gdbserver <span class="built_in">which</span> </span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置ssh服务</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">echo</span> <span class="string">&#x27;PermitRootLogin yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;PermitEmptyPasswords yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;PasswordAuthentication yes&#x27;</span> &gt;&gt; /etc/ssh/sshd_config &amp;&amp; \</span></span><br><span class="line"><span class="bash">    <span class="built_in">echo</span> <span class="string">&#x27;root:root&#x27;</span> | chpasswd &amp;&amp; \</span></span><br><span class="line"><span class="bash">    ssh-keygen -A</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">EXPOSE</span> <span class="number">22</span> </span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">&quot;/usr/sbin/sshd&quot;</span>, <span class="string">&quot;-D&quot;</span>]</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker build -t proxysqldebug:v1 .</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-运行容器"><a href="#2-运行容器" class="headerlink" title="2. 运行容器"></a>2. 运行容器</h4><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker run -d -p 2222:22 --security-opt seccomp:unconfined -v $PWD:/home/luzhangting001/proxysql --name proxysqldev proxysqldebug:v1</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 后面容器stop + start 不要在重启，如下图</span></span><br></pre></td></tr></table></figure>
+
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229121528631.png" alt="image-20211229121528631" style="zoom:100%; float:left" />
+
+<h4 id="3-启动debug"><a href="#3-启动debug" class="headerlink" title="3. 启动debug"></a>3. 启动debug</h4><p>配置launch.json</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="string">&quot;configurations&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;(gdb) Launch&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;cppdbg&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;request&quot;</span>: <span class="string">&quot;launch&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;program&quot;</span>: <span class="string">&quot;/home/luzhangting001/proxysql/src/proxysql&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;args&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;--foreground&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--debug&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--config&quot;</span>,</span><br><span class="line">            <span class="string">&quot;/home/luzhangting001/proxysql/src/proxysql.cfg&quot;</span>,</span><br><span class="line">            <span class="string">&quot;--initial&quot;</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="attr">&quot;stopAtEntry&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;cwd&quot;</span>: <span class="string">&quot;/home/luzhangting001/proxysql&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;pipeTransport&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;debuggerPath&quot;</span>: <span class="string">&quot;/usr/bin/gdb&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;pipeProgram&quot;</span>: <span class="string">&quot;/usr/bin/ssh&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;pipeArgs&quot;</span>: [</span><br><span class="line">                <span class="string">&quot;root@localhost&quot;</span>,</span><br><span class="line">                <span class="string">&quot;-p&quot;</span>,</span><br><span class="line">                <span class="string">&quot;2222&quot;</span></span><br><span class="line">            ],</span><br><span class="line">            <span class="attr">&quot;pipeCwd&quot;</span>: <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;environment&quot;</span>: [],</span><br><span class="line">        <span class="attr">&quot;externalConsole&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;MIMode&quot;</span>: <span class="string">&quot;gdb&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;sourceFileMap&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;/home/luzhangting001/proxysql&quot;</span>: <span class="string">&quot;$&#123;workspaceFolder&#125;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>启动报错：因为之前弄过，ssh报错了</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229121827990.png" alt="image-20211229121827990" style="zoom:100%; float:left" />
+
+<p>将known_hosts里面的相关信息删除, 其实我不知道是不是必须这么做，可能不是必须的</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229122615654.png" alt="image-20211229122615654" style="zoom:100%; float:left" />
+
+<p>将本机的公钥上传</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">ssh-copy-id -p 2222 root@localhost</span><br></pre></td></tr></table></figure>
+
+<p>vscode里面启动</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20211229153334425.png" alt="image-20211229153334425" style="zoom:80%;float:left" />
+]]></content>
+      <tags>
+        <tag>proxysql</tag>
+        <tag>mac本地环境</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hexo文章设置草稿-暂不发布-文章分类</title>
+    <url>/2022/01/12/hexo%E6%96%87%E7%AB%A0%E8%AE%BE%E7%BD%AE%E8%8D%89%E7%A8%BF-%E6%9A%82%E4%B8%8D%E5%8F%91%E5%B8%83-%E6%96%87%E7%AB%A0%E5%88%86%E7%B1%BB/</url>
+    <content><![CDATA[<h4 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h4><p>1、每次执行hexo d -g都会将所有的所有文章push上去，有的文章其实一个是没有写完，一个是敏感信息还需要处理</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">hexo new draft &lt;title&gt;  # source/_drafts</span><br><span class="line">hexo P &lt;filename&gt;       # source/_drafts  -&gt;  source/_post</span><br></pre></td></tr></table></figure>
+
+<p>2、能不能分类，当前所有的文章都在source/_posts下面(如下图)，后面越来越多，真的不好管理，也不好找</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220112102324526.png" alt="image-20220112102324526" style="zoom:50%;float:left" />
+
+<h4 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h4>]]></content>
+      <tags>
+        <tag>hexo</tag>
+        <tag>blog</tag>
+        <tag>草稿</tag>
+        <tag>文章分类</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>买一个3年腾讯云服务-日常开发使用</title>
+    <url>/2022/01/11/%E4%B9%B0%E4%B8%80%E4%B8%AA3%E5%B9%B4%E8%85%BE%E8%AE%AF%E4%BA%91%E6%9C%8D%E5%8A%A1-%E6%97%A5%E5%B8%B8%E5%BC%80%E5%8F%91%E4%BD%BF%E7%94%A8/</url>
+    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>今天在看大佬写代码的过程中，大佬说我不想在本地开发，环境重启麻烦，我想万分赞同。每次换电脑都是烦人。</p>
+<p>然后我就打开了阿里云，一看好贵，接着打开了腾讯云，嗯，好像便宜点。我承认我就是被下面的广告吸引的。然后我就点了立即购买的按钮😂</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111143908730.png" alt="image-20220111143908730" style="zoom:50%;float:left" />
+
+<p>接着我想1核2G实在是气质不符，头脑一热2核4G，一看1年虽然也很长， 不过3年好像更不用操心，主要是怕被催账。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111144433048.png" alt="image-20220111144433048" style="zoom:50%;float:left" />
+
+<p>好，接着就是打开微信-绑定+付钱了,订单就好了</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111144703537.png" alt="image-20220111144703537" style="zoom:50%;float:left" />
+
+<h4 id="ssh登录设置"><a href="#ssh登录设置" class="headerlink" title="ssh登录设置"></a>ssh登录设置</h4><p>说实话，不论是阿里云还是腾讯云的web都异常的复杂，各种点点点都是产品+产品，账单+账单。就想问刚买的服务器去哪了。</p>
+<p>不浪费时间：<a href="https://console.cloud.tencent.com/lighthouse/instance/index">https://console.cloud.tencent.com/lighthouse/instance/index</a>  chrome保存🔖吧，找起来费劲。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111145804003.png" alt="image-20220111145804003" style="zoom:50%;float:left" />
+
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 编辑sshd_config,如下</span></span></span><br><span class="line">sudo vi /etc/ssh/sshd_config</span><br><span class="line">[lighthouse@VM-24-14-centos ~]$ # vim /etc/ssh/sshd_config </span><br><span class="line">[lighthouse@VM-24-14-centos ~]$ # PermitRootLogin yes 去掉注释</span><br><span class="line">[lighthouse@VM-24-14-centos ~]$ # pubkeyAuthentication yes 去掉注释</span><br><span class="line">[lighthouse@VM-24-14-centos ~]$ # PasswordAuthentication yes 去掉注释</span><br><span class="line"><span class="meta">#</span><span class="bash"> 重启sshd服务</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="本机配置ssh并登录"><a href="#本机配置ssh并登录" class="headerlink" title="本机配置ssh并登录"></a>本机配置ssh并登录</h4><p>找到公网ip</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111150006715.png" alt="image-20220111150006715" style="zoom:50%;float:left" />
+
+<p>将本机的公钥通过ssh-copy-id拷贝到remote host</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">ssh-copy-id root@ip</span><br><span class="line">ssh root@ip  # 直接登录</span><br></pre></td></tr></table></figure>
+
+<h4 id="通过vscode登录并且code"><a href="#通过vscode登录并且code" class="headerlink" title="通过vscode登录并且code"></a>通过vscode登录并且code</h4><h5 id="先安装remote-ssh插件"><a href="#先安装remote-ssh插件" class="headerlink" title="先安装remote ssh插件"></a>先安装remote ssh插件</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111150257939.png" alt="image-20220111150257939" style="zoom:50%;float:left" />
+
+<h5 id="输入ssh-root-ip并选择ssh-config，原谅色出现搞完，接着就是愉快的coding"><a href="#输入ssh-root-ip并选择ssh-config，原谅色出现搞完，接着就是愉快的coding" class="headerlink" title="输入ssh root@ip并选择ssh config，原谅色出现搞完，接着就是愉快的coding"></a>输入ssh root@ip并选择ssh config，原谅色出现搞完，接着就是愉快的coding</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111150401476.png" alt="image-20220111150401476" style="zoom:50%;float:left" />
+
+<h5 id="打开远端的文件"><a href="#打开远端的文件" class="headerlink" title="打开远端的文件"></a>打开远端的文件</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111151140566.png" alt="image-20220111151140566" style="zoom:50%;float:left" />
+
+<h5 id="删除下remote-host，比如ip写错了之类，编辑-ssh-config文件才行"><a href="#删除下remote-host，比如ip写错了之类，编辑-ssh-config文件才行" class="headerlink" title="删除下remote host，比如ip写错了之类，编辑~/.ssh/config文件才行"></a>删除下remote host，比如ip写错了之类，编辑~/.ssh/config文件才行</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111151753449.png" alt="image-20220111151753449" style="zoom:50%;float:left" />
+
+<h5 id="自己安装需要的插件，注意本地和远程是不一样的"><a href="#自己安装需要的插件，注意本地和远程是不一样的" class="headerlink" title="自己安装需要的插件，注意本地和远程是不一样的"></a>自己安装需要的插件，注意本地和远程是不一样的</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111152351292.png" alt="image-20220111152351292" style="zoom:50%;float:left" />
+
+<h5 id="在centos7上安装go，设置go-env"><a href="#在centos7上安装go，设置go-env" class="headerlink" title="在centos7上安装go，设置go env"></a>在centos7上安装go，设置go env</h5><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">yum update -y</span><br><span class="line">yum install -y go # 安装的是1.15</span><br><span class="line">go env -w GOPROXY=https://goproxy.cn,direct</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h5 id="为啥这个导入会报错呢？-嗯，大概率就是环境的问题，用个go-mod-init解决就行"><a href="#为啥这个导入会报错呢？-嗯，大概率就是环境的问题，用个go-mod-init解决就行" class="headerlink" title="为啥这个导入会报错呢？ 嗯，大概率就是环境的问题，用个go mod init解决就行"></a>为啥这个导入会报错呢？ 嗯，大概率就是环境的问题，用个go mod init解决就行</h5><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111161358986.png" alt="image-20220111161358986" style="zoom:50%;float:left" />
+
+<p>2021-01-11今天先到这，等会面有新的想法了在更新</p>
+<p>2021-01-14号，接着上面，被攻击了</p>
+<h3 id="背景-1"><a href="#背景-1" class="headerlink" title="背景"></a>背景</h3><p>我的腾讯云的轻量服务器，突然给我发消息说我有违规行为，我就开了22端口做了一个远程登录😂</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114115516893.png" alt="image-20220114115516893" style="zoom:50%;float:left" />
+
+<h3 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h3><p>1、我先等了一天，通知的24h接触封禁</p>
+<p>2、结果还是不能登录</p>
+<p>3、客服说得用VNC登录，<a href="https://cloud.tencent.com/document/product/1207/46824">https://cloud.tencent.com/document/product/1207/46824</a> ， 就是下面的这个按钮</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114115847427.png" alt="image-20220114115847427" style="zoom:50%;float:left" />
+
+<p>4、我发现得要个密码不是，可是没有初始密码，记住第一次必须是重置密码，在页面上ctrl+f搜索密码,就是下面的&lt;重置密码&gt;按钮。实际上操作就是之前我们做的sudo passwd root  – 注意这里前往不要弄的太简单了，真的很容易被破解。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114120029547.png" alt="image-20220114120029547" style="zoom:50%;float:left" />
+
+<p>5、好了一次次重启之后你就可以在&lt;页面上&gt;正常登录了，接着肯定是本机登录，发现就出现了下面的东西😂</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">-&gt;</span><span class="bash"> % ssh root@ip</span></span><br><span class="line">root@ip: Permission denied (publickey,gssapi-keyex,gssapi-with-mic).</span><br></pre></td></tr></table></figure>
+
+<p>6、为啥不行了呢， 看文档说是要么使用密码，要么使用秘钥，实际上是都可以用，不过就是授权的方式不同</p>
+<ul>
+<li>管理密钥  <a href="https://cloud.tencent.com/document/product/1207/44573">https://cloud.tencent.com/document/product/1207/44573</a></li>
+</ul>
+<p>因为之前我们登录过，在~/.ssh/known_hosts这里已经有ip记录了，把对应ip的记录去掉再试。</p>
+<p>7、调整好了之后我们接着ssh root@ip, 这些更好了，直接给我闪退了。同时，我还发现了一个新问题，我不能su root了</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114141342311.png" alt="image-20220114141342311" style="zoom:50%;float:left" />
+
+<p>8、突然，我的服务器咋了，被攻击了~ 盲猜应该是将我的ssh服务给篡改了。导致了我ssh连接了就闪退，还有我不能切换root账号。</p>
+<p>9、好在我没啥东西，其实我觉得重新安装sshd即可，但是为了保险起见，我还是重新安装OS吧。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114142036461.png" alt="image-20220114142036461" style="zoom:50%;float:left" />
+
+<p>好家伙，这个操作贼快，这个所谓的轻量服务器容器没跑了</p>
+<p>10、为啥ssh-copy-id不需要密码？对比手动和ssh-copy-id，大概是ssh-copy-id有固定程序吧。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 手动</span></span><br><span class="line">ssh root@ip # 输入root密码</span><br><span class="line">vim ~/.ssh/authorized_keys  # 添加公钥</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> ssh-copy-id</span></span><br><span class="line">ssh-copy-id root@ip # 不需要输入密码 -- 为啥？</span><br></pre></td></tr></table></figure>
+
+<p>11、公钥和私钥是怎么一起起作用的?</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先说问题的来源</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 本机 -&gt; remote</span></span><br><span class="line">ssh-copy-id 将本地的公钥copy到 ~/.ssh/authorized_keys    ---&gt;  本地可以登录远端</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 腾讯云 授权过程  秘钥管理</span></span><br><span class="line">生成秘钥一对，本地保存私钥</span><br><span class="line">下发公钥到实例</span><br><span class="line">ssh -i 私钥 root@ip </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 实际上也是一样的，本地连接的时候使用私钥去匹配remote ~/.ssh/authorized_keys 里面的公钥。</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 经历一些问题可以更快的去理解很多东西的原理</span></span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <tags>
+        <tag>腾讯云</tag>
+        <tag>ECS</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>go-包管理</title>
+    <url>/2022/01/21/go-%E5%8C%85%E7%AE%A1%E7%90%86/</url>
+    <content><![CDATA[<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>每次打开IDE，都变红。如果超过3次，我想着是不是应该将事实弄明白呢。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220121111115117.png" alt="image-20220121111115117" style="zoom:100%;float:left" />
+
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><h5 id="1、为啥会报错？"><a href="#1、为啥会报错？" class="headerlink" title="1、为啥会报错？"></a>1、为啥会报错？</h5><blockquote>
+<p>肯定是找不到对应的pkg</p>
+</blockquote>
+<h5 id="2、那IDE到底是去哪里找了呢？"><a href="#2、那IDE到底是去哪里找了呢？" class="headerlink" title="2、那IDE到底是去哪里找了呢？"></a>2、那IDE到底是去哪里找了呢？</h5><blockquote>
+<p>理论上是gopath路径下面，👇🏻GOPATH=”/root/gopath” 这里，IDE里面可以设置的项目更多</p>
+</blockquote>
+<p>go env的输出</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">GO111MODULE=&quot;on&quot; </span><br><span class="line">GOPATH=&quot;/root/gopath&quot;</span><br><span class="line">GOPROXY=&quot;https://goproxy.cn,direct&quot;  # 设置代理，go get的时候快点</span><br><span class="line">GOROOT=&quot;/usr/local/go&quot;  # go二进制包的安装地址</span><br><span class="line">GOVERSION=&quot;go1.17&quot;  # go版本</span><br></pre></td></tr></table></figure>
+
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220121181545764.png" alt="image-20220121181545764" style="zoom:100%;float:left" />
+
+<h5 id="3、实际上GOPATH下面是有需要的pkg的"><a href="#3、实际上GOPATH下面是有需要的pkg的" class="headerlink" title="3、实际上GOPATH下面是有需要的pkg的"></a>3、实际上GOPATH下面是有需要的pkg的</h5><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 需要的包</span>	</span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> % ll /Users/linmi/go/pkg/mod/github.com/prometheus</span></span><br><span class="line">total 0</span><br><span class="line">dr-xr-xr-x   23 linmi  staff   736B  1 21 12:01 client_golang@v1.12.0</span><br><span class="line">dr-xr-xr-x   13 linmi  staff   416B  1 21 12:01 client_model@v0.2.0</span><br><span class="line">dr-xr-xr-x   24 linmi  staff   768B  1 21 12:01 common@v0.32.1</span><br><span class="line">dr-xr-xr-x  122 linmi  staff   3.8K  1 21 12:01 procfs@v0.7.3</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> IDE报错的路径</span></span><br><span class="line">/Users/linmi/go/pkg/mod/src/github.com/prometheus/client_golang/prometheus/promhttp (from $GOPATH)</span><br></pre></td></tr></table></figure>
+
+<p>📢：IDE报错的路径里面多了一层<code>src</code>目录，这就有点出乎意料了。</p>
+<h5 id="4、最佳实践"><a href="#4、最佳实践" class="headerlink" title="4、最佳实践"></a>4、最佳实践</h5><p>gopath和go mod是互斥的，现在的话肯定是go mod了。最简单&amp;有效的方法，类似python那样，各个项目自己管理自己的包。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">go mod vendor # 创建vendor依赖</span><br><span class="line">go mod tidy </span><br></pre></td></tr></table></figure>
+
+<p>IDE打开go modules的选项，问题自然就解决了</p>
+<h5 id="5、Mac上go多版本怎么管理"><a href="#5、Mac上go多版本怎么管理" class="headerlink" title="5、Mac上go多版本怎么管理"></a>5、Mac上go多版本怎么管理</h5><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先确认是不是brew管理</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> % <span class="built_in">which</span> go</span></span><br><span class="line">/usr/local/bin/go</span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> % ll -h /usr/<span class="built_in">local</span>/bin/go</span></span><br><span class="line">lrwxr-xr-x  1 linmi  admin    26B 10 12 23:34 /usr/local/bin/go -&gt; ../Cellar/go/1.17.2/bin/go # Cellar这里就能说明是的</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 接着看看有哪些版本，我的本机有3个版本</span></span><br><span class="line">ll /usr/local/opt | grep go  # opt=options查看可选择的版本</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    19B 10 12 23:34 go -&gt; ../Cellar/go/1.17.2</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    25B 10 13 10:54 go@1.15 -&gt; ../Cellar/go@1.15/1.15.15</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    24B  9 23 11:27 go@1.16 -&gt; ../Cellar/go@1.16/1.16.8</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    19B 10 12 23:34 go@1.17 -&gt; ../Cellar/go/1.17.2</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    19B 10 12 23:34 golang -&gt; ../Cellar/go/1.17.2</span><br><span class="line">lrwxr-xr-x  1 linmi  admin    19B 10 12 23:34 google-go -&gt; ../Cellar/go/1.17.2</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 那要怎么使用brew快捷的进行设置呢</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> % brew link go</span></span><br><span class="line">Warning: Already linked: /usr/local/Cellar/go/1.17.2</span><br><span class="line">To relink, run:</span><br><span class="line">  brew unlink go &amp;&amp; brew link go   # 重新回到最近的版本</span><br><span class="line"><span class="meta">-&gt;</span><span class="bash">% brew link --overwrite go@1.16  <span class="comment"># 看这个就知道是重写了</span></span></span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <tags>
+        <tag>go</tag>
+        <tag>包管理</tag>
       </tags>
   </entry>
 </search>
