@@ -20,12 +20,12 @@
     var CONFIG = {"hostname":"zhangtinglu.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="背景今天在看大佬写代码的过程中，大佬说我不想在本地开发，环境重启麻烦，我想万分赞同。每次换电脑都是烦人。 然后我就打开了阿里云，一看好贵，接着打开了腾讯云，嗯，好像便宜点。我承认我就是被下面的广告吸引的。然后我就点了立即购买的按钮😂   接着我想1核2G实在是气质不符，头脑一热2核4G，一看1年虽然也很长， 不过3年好像更不用操心，主要是怕被催账。   好，接着就是打开微信-绑定+付钱了,订单就">
+  <meta name="description" content="背景2022-01-11 – 腾讯云服务器开发今天在看大佬写代码的过程中，大佬说我不想在本地开发，环境重启麻烦，我想万分赞同。每次换电脑都是烦人。 然后我就打开了阿里云，一看好贵，接着打开了腾讯云，嗯，好像便宜点。我承认我就是被下面的广告吸引的。然后我就点了立即购买的按钮😂   接着我想1核2G实在是气质不符，头脑一热2核4G，一看1年虽然也很长， 不过3年好像更不用操心，主要是怕被催账。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="买一个3年腾讯云服务-日常开发使用">
 <meta property="og:url" content="https://zhangtinglu.github.io/2022/01/11/%E4%B9%B0%E4%B8%80%E4%B8%AA3%E5%B9%B4%E8%85%BE%E8%AE%AF%E4%BA%91%E6%9C%8D%E5%8A%A1-%E6%97%A5%E5%B8%B8%E5%BC%80%E5%8F%91%E4%BD%BF%E7%94%A8/index.html">
 <meta property="og:site_name" content="Moonshine&#39;s Blog">
-<meta property="og:description" content="背景今天在看大佬写代码的过程中，大佬说我不想在本地开发，环境重启麻烦，我想万分赞同。每次换电脑都是烦人。 然后我就打开了阿里云，一看好贵，接着打开了腾讯云，嗯，好像便宜点。我承认我就是被下面的广告吸引的。然后我就点了立即购买的按钮😂   接着我想1核2G实在是气质不符，头脑一热2核4G，一看1年虽然也很长， 不过3年好像更不用操心，主要是怕被催账。   好，接着就是打开微信-绑定+付钱了,订单就">
+<meta property="og:description" content="背景2022-01-11 – 腾讯云服务器开发今天在看大佬写代码的过程中，大佬说我不想在本地开发，环境重启麻烦，我想万分赞同。每次换电脑都是烦人。 然后我就打开了阿里云，一看好贵，接着打开了腾讯云，嗯，好像便宜点。我承认我就是被下面的广告吸引的。然后我就点了立即购买的按钮😂   接着我想1核2G实在是气质不符，头脑一热2核4G，一看1年虽然也很长， 不过3年好像更不用操心，主要是怕被催账。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111143908730.png">
 <meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111144433048.png">
@@ -43,11 +43,17 @@
 <meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114120029547.png">
 <meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114141342311.png">
 <meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114142036461.png">
+<meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126144535536.png">
+<meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126144740691.png">
+<meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126145033587.png">
+<meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126150158167.png">
+<meta property="og:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126152837014.png">
 <meta property="article:published_time" content="2022-01-11T06:37:33.000Z">
-<meta property="article:modified_time" content="2022-01-14T06:32:51.617Z">
+<meta property="article:modified_time" content="2022-01-26T07:30:17.263Z">
 <meta property="article:author" content="Moonshine">
 <meta property="article:tag" content="腾讯云">
 <meta property="article:tag" content="ECS">
+<meta property="article:tag" content="RAKsmart">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111143908730.png">
 
@@ -230,7 +236,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-01-14 14:32:51" itemprop="dateModified" datetime="2022-01-14T14:32:51+08:00">2022-01-14</time>
+                <time title="修改时间：2022-01-26 15:30:17" itemprop="dateModified" datetime="2022-01-26T15:30:17+08:00">2022-01-26</time>
               </span>
 
           
@@ -244,7 +250,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>今天在看大佬写代码的过程中，大佬说我不想在本地开发，环境重启麻烦，我想万分赞同。每次换电脑都是烦人。</p>
+        <h3 id="背景2022-01-11-–-腾讯云服务器开发"><a href="#背景2022-01-11-–-腾讯云服务器开发" class="headerlink" title="背景2022-01-11 – 腾讯云服务器开发"></a>背景2022-01-11 – 腾讯云服务器开发</h3><p>今天在看大佬写代码的过程中，大佬说我不想在本地开发，环境重启麻烦，我想万分赞同。每次换电脑都是烦人。</p>
 <p>然后我就打开了阿里云，一看好贵，接着打开了腾讯云，嗯，好像便宜点。我承认我就是被下面的广告吸引的。然后我就点了立即购买的按钮😂</p>
 <img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220111143908730.png" alt="image-20220111143908730" style="zoom:50%;float:left" />
 
@@ -282,10 +288,10 @@
 
 <p>2021-01-11今天先到这，等会面有新的想法了在更新</p>
 <p>2021-01-14号，接着上面，被攻击了</p>
-<h3 id="背景-1"><a href="#背景-1" class="headerlink" title="背景"></a>背景</h3><p>我的腾讯云的轻量服务器，突然给我发消息说我有违规行为，我就开了22端口做了一个远程登录😂</p>
+<h3 id="背景2021-01-14-腾讯云服务器被攻击"><a href="#背景2021-01-14-腾讯云服务器被攻击" class="headerlink" title="背景2021-01-14-腾讯云服务器被攻击"></a>背景2021-01-14-腾讯云服务器被攻击</h3><p>我的腾讯云的轻量服务器，突然给我发消息说我有违规行为，我就开了22端口做了一个远程登录😂</p>
 <img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114115516893.png" alt="image-20220114115516893" style="zoom:50%;float:left" />
 
-<h3 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h3><p>1、我先等了一天，通知的24h接触封禁</p>
+<h4 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h4><p>1、我先等了一天，通知的24h接触封禁</p>
 <p>2、结果还是不能登录</p>
 <p>3、客服说得用VNC登录，<a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/1207/46824">https://cloud.tencent.com/document/product/1207/46824</a> ， 就是下面的这个按钮</p>
 <img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220114115847427.png" alt="image-20220114115847427" style="zoom:50%;float:left" />
@@ -315,6 +321,45 @@
 <p>11、公钥和私钥是怎么一起起作用的?</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先说问题的来源</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 本机 -&gt; remote</span></span><br><span class="line">ssh-copy-id 将本地的公钥copy到 ~/.ssh/authorized_keys    ---&gt;  本地可以登录远端</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 腾讯云 授权过程  秘钥管理</span></span><br><span class="line">生成秘钥一对，本地保存私钥</span><br><span class="line">下发公钥到实例</span><br><span class="line">ssh -i 私钥 root@ip </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 实际上也是一样的，本地连接的时候使用私钥去匹配remote ~/.ssh/authorized_keys 里面的公钥。</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 经历一些问题可以更快的去理解很多东西的原理</span></span><br></pre></td></tr></table></figure>
 
+<h3 id="背景2021-01-26-RAKsmart云服务器被攻击"><a href="#背景2021-01-26-RAKsmart云服务器被攻击" class="headerlink" title="背景2021-01-26-RAKsmart云服务器被攻击"></a>背景2021-01-26-RAKsmart云服务器被攻击</h3><p>写着写着我发现越写越长，真行，但是我也懒得再开一篇，毕竟都是一个系列的，折腾完了国内的服务器，就开始折腾国外的了。</p>
+<p>1、为啥选择RAKsmart，货比三家性价比，算了，就是最便宜</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126144535536.png" alt="image-20220126144535536" style="zoom:80%;float:left" />
+
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126144740691.png" alt="image-20220126144740691" style="zoom:50%;float:left" />
+
+<p>然后呢，我就买了一个HK的服务器，毕竟都不是小气的人。</p>
+<p>2、登录机器</p>
+<p>怎么登录服务器真的很傻瓜，没啥限制，在哪都能很快的ssh root@ip，直接在下面的页面上获取对应的信息，清晰明了。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126145033587.png" alt="image-20220126145033587" style="zoom:50%;float:left" />
+
+<p>3、下载一个github项目(自己找好玩的项目啊)</p>
+<p>我找的项目是：<a target="_blank" rel="noopener" href="https://github.com/hwdsl2/setup-ipsec-vpn%EF%BC%8C%E8%87%B3%E4%BA%8E%E4%BD%A0%E6%89%BE%E5%95%A5%E9%9A%8F%E6%84%8F">https://github.com/hwdsl2/setup-ipsec-vpn，至于你找啥随意</a>~~</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">wget https://git.io/vpnquickstart -O vpn.sh &amp;&amp; sudo sh vpn.sh</span><br><span class="line"><span class="meta">#</span><span class="bash"> 会生成类似下面的信息，下面就可以直接使用IPsec连接了。 机器已经♻️，所以☺️~</span></span><br><span class="line">Server IP: 107.148.237.19</span><br><span class="line">IPsec PSK: E5ux2YRkHVN8LJv9XeGd</span><br><span class="line">Username: vpnuser</span><br><span class="line">Password: skcbn9ypy3UWwjch</span><br></pre></td></tr></table></figure>
+
+<p>执行上面的命令完事，如果中途有依赖问题，百度即可解决。</p>
+<p>4、测试：手机连接</p>
+<p>详细文档：<a target="_blank" rel="noopener" href="https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/docs/clients-zh.md#ios">https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/docs/clients-zh.md#ios</a>  </p>
+<p>亲测可用，接着就可以下载比如google浏览器之类的，然后愉快的学习。</p>
+<p>5、惊喜：我发现啥也不限制，就是网速116KB/s，真的就只够一个看看视频，其他就不用奢望了。所以我决定退货。</p>
+<p>6、退货：这里就不得不夸一夸服务态度，看见了吧，3小时回复速度，也不废话，说清楚了，直接给退货了。表示非常满意，要不是网速是在感人，我都不想退了。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126150158167.png" alt="image-20220126150158167" style="zoom:50%;float:left" />
+
+<h3 id="背景2021-01-26-surfshark"><a href="#背景2021-01-26-surfshark" class="headerlink" title="背景2021-01-26-surfshark"></a>背景2021-01-26-surfshark</h3><p>1、上面的不是网速慢，我想着就不用服务器，直接买服务吧。于是，又是一通操作，确定了surfshark，至于为啥，网上都说surfshark=性价比，于是我就不争气的选择了这个，对比express<em>、norv</em> 还真是。</p>
+<p>2、接着就是买服务，￥380 = 24月+2月，可以AliPay，其实还是很便宜的，不限速度+不限终端。</p>
+<p>3、然后就按照官网折腾，surfshark + Open***(看官网)都不太行的。不管什么操作手势，都难以实现。</p>
+<p>4、你以为我就放弃了，我确实是要放手了，然后我就开始搜索<code>退货</code>英文咋说。</p>
+<p>5、这家是7*24h客服，于是我就English客服了，一顿说refund，然后我就收到好多配置文档PDF + 一个<code>config</code>,  注意这个config是我之前忽略的转机。</p>
+<p>6、接着我就是按照PDF一顿操作，其实和官方视频没啥区别，没辙了就email support了，support说可以refund，但是能不能更详细的信息，我想着可以，就准备了一个notion文档。然后有开始等，感觉7*24h也很慢，人家睡觉的时候还是要等。</p>
+<p>7、我就想要好好理解下我到底是买了一个啥，后面吭哧吭哧发现，我还需要一个proxy，就是设置各种路由规则的。比如百度就不同代理，需要proxy的就proxy。</p>
+<p>8、我就github上学习了一会，有学习了两个新项目：</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/yichengchen/clashX">https://github.com/yichengchen/clashX</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/Dreamacro/clash">https://github.com/Dreamacro/clash</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/txthinking/brook">https://github.com/txthinking/brook</a> ：在ios上有app</p>
+<p>9、接着我就安装了一个小猫猫软件 = Surge(好用但是贵的哟)</p>
+<p>还记得English客服小姐姐给了我一个Config文件(直接练习客服说要config文件，提供的app在**不能用)，这个时候就是发挥作用了，打开配置文件，直接将配置塞进去，就可以玩了。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220126152837014.png" alt="image-20220126152837014" style="zoom:50%;float:left" />
+
+<p>10、你以为Brook是你想下载就能下载，这个时候你需要一个对应的美区的apple id，这个就不废话了，因为本人提供免费的支持😁，请联系。</p>
 
     </div>
 
@@ -326,6 +371,7 @@
           <div class="post-tags">
               <a href="/tags/%E8%85%BE%E8%AE%AF%E4%BA%91/" rel="tag"># 腾讯云</a>
               <a href="/tags/ECS/" rel="tag"># ECS</a>
+              <a href="/tags/RAKsmart/" rel="tag"># RAKsmart</a>
           </div>
 
         
@@ -399,7 +445,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ssh%E7%99%BB%E5%BD%95%E8%AE%BE%E7%BD%AE"><span class="nav-number">2.</span> <span class="nav-text">ssh登录设置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%AC%E6%9C%BA%E9%85%8D%E7%BD%AEssh%E5%B9%B6%E7%99%BB%E5%BD%95"><span class="nav-number">3.</span> <span class="nav-text">本机配置ssh并登录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9A%E8%BF%87vscode%E7%99%BB%E5%BD%95%E5%B9%B6%E4%B8%94code"><span class="nav-number">4.</span> <span class="nav-text">通过vscode登录并且code</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%88%E5%AE%89%E8%A3%85remote-ssh%E6%8F%92%E4%BB%B6"><span class="nav-number">4.1.</span> <span class="nav-text">先安装remote ssh插件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%BE%93%E5%85%A5ssh-root-ip%E5%B9%B6%E9%80%89%E6%8B%A9ssh-config%EF%BC%8C%E5%8E%9F%E8%B0%85%E8%89%B2%E5%87%BA%E7%8E%B0%E6%90%9E%E5%AE%8C%EF%BC%8C%E6%8E%A5%E7%9D%80%E5%B0%B1%E6%98%AF%E6%84%89%E5%BF%AB%E7%9A%84coding"><span class="nav-number">4.2.</span> <span class="nav-text">输入ssh root@ip并选择ssh config，原谅色出现搞完，接着就是愉快的coding</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%89%93%E5%BC%80%E8%BF%9C%E7%AB%AF%E7%9A%84%E6%96%87%E4%BB%B6"><span class="nav-number">4.3.</span> <span class="nav-text">打开远端的文件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E4%B8%8Bremote-host%EF%BC%8C%E6%AF%94%E5%A6%82ip%E5%86%99%E9%94%99%E4%BA%86%E4%B9%8B%E7%B1%BB%EF%BC%8C%E7%BC%96%E8%BE%91-ssh-config%E6%96%87%E4%BB%B6%E6%89%8D%E8%A1%8C"><span class="nav-number">4.4.</span> <span class="nav-text">删除下remote host，比如ip写错了之类，编辑~&#x2F;.ssh&#x2F;config文件才行</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%87%AA%E5%B7%B1%E5%AE%89%E8%A3%85%E9%9C%80%E8%A6%81%E7%9A%84%E6%8F%92%E4%BB%B6%EF%BC%8C%E6%B3%A8%E6%84%8F%E6%9C%AC%E5%9C%B0%E5%92%8C%E8%BF%9C%E7%A8%8B%E6%98%AF%E4%B8%8D%E4%B8%80%E6%A0%B7%E7%9A%84"><span class="nav-number">4.5.</span> <span class="nav-text">自己安装需要的插件，注意本地和远程是不一样的</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9C%A8centos7%E4%B8%8A%E5%AE%89%E8%A3%85go%EF%BC%8C%E8%AE%BE%E7%BD%AEgo-env"><span class="nav-number">4.6.</span> <span class="nav-text">在centos7上安装go，设置go env</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%BA%E5%95%A5%E8%BF%99%E4%B8%AA%E5%AF%BC%E5%85%A5%E4%BC%9A%E6%8A%A5%E9%94%99%E5%91%A2%EF%BC%9F-%E5%97%AF%EF%BC%8C%E5%A4%A7%E6%A6%82%E7%8E%87%E5%B0%B1%E6%98%AF%E7%8E%AF%E5%A2%83%E7%9A%84%E9%97%AE%E9%A2%98%EF%BC%8C%E7%94%A8%E4%B8%AAgo-mod-init%E8%A7%A3%E5%86%B3%E5%B0%B1%E8%A1%8C"><span class="nav-number">4.7.</span> <span class="nav-text">为啥这个导入会报错呢？ 嗯，大概率就是环境的问题，用个go mod init解决就行</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF-1"><span class="nav-number"></span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%87%E7%A8%8B"><span class="nav-number"></span> <span class="nav-text">过程</span></a></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF2022-01-11-%E2%80%93-%E8%85%BE%E8%AE%AF%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%BC%80%E5%8F%91"><span class="nav-number">1.</span> <span class="nav-text">背景2022-01-11 – 腾讯云服务器开发</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ssh%E7%99%BB%E5%BD%95%E8%AE%BE%E7%BD%AE"><span class="nav-number">1.1.</span> <span class="nav-text">ssh登录设置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%AC%E6%9C%BA%E9%85%8D%E7%BD%AEssh%E5%B9%B6%E7%99%BB%E5%BD%95"><span class="nav-number">1.2.</span> <span class="nav-text">本机配置ssh并登录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9A%E8%BF%87vscode%E7%99%BB%E5%BD%95%E5%B9%B6%E4%B8%94code"><span class="nav-number">1.3.</span> <span class="nav-text">通过vscode登录并且code</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%88%E5%AE%89%E8%A3%85remote-ssh%E6%8F%92%E4%BB%B6"><span class="nav-number">1.3.1.</span> <span class="nav-text">先安装remote ssh插件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%BE%93%E5%85%A5ssh-root-ip%E5%B9%B6%E9%80%89%E6%8B%A9ssh-config%EF%BC%8C%E5%8E%9F%E8%B0%85%E8%89%B2%E5%87%BA%E7%8E%B0%E6%90%9E%E5%AE%8C%EF%BC%8C%E6%8E%A5%E7%9D%80%E5%B0%B1%E6%98%AF%E6%84%89%E5%BF%AB%E7%9A%84coding"><span class="nav-number">1.3.2.</span> <span class="nav-text">输入ssh root@ip并选择ssh config，原谅色出现搞完，接着就是愉快的coding</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%89%93%E5%BC%80%E8%BF%9C%E7%AB%AF%E7%9A%84%E6%96%87%E4%BB%B6"><span class="nav-number">1.3.3.</span> <span class="nav-text">打开远端的文件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E4%B8%8Bremote-host%EF%BC%8C%E6%AF%94%E5%A6%82ip%E5%86%99%E9%94%99%E4%BA%86%E4%B9%8B%E7%B1%BB%EF%BC%8C%E7%BC%96%E8%BE%91-ssh-config%E6%96%87%E4%BB%B6%E6%89%8D%E8%A1%8C"><span class="nav-number">1.3.4.</span> <span class="nav-text">删除下remote host，比如ip写错了之类，编辑~&#x2F;.ssh&#x2F;config文件才行</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%87%AA%E5%B7%B1%E5%AE%89%E8%A3%85%E9%9C%80%E8%A6%81%E7%9A%84%E6%8F%92%E4%BB%B6%EF%BC%8C%E6%B3%A8%E6%84%8F%E6%9C%AC%E5%9C%B0%E5%92%8C%E8%BF%9C%E7%A8%8B%E6%98%AF%E4%B8%8D%E4%B8%80%E6%A0%B7%E7%9A%84"><span class="nav-number">1.3.5.</span> <span class="nav-text">自己安装需要的插件，注意本地和远程是不一样的</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9C%A8centos7%E4%B8%8A%E5%AE%89%E8%A3%85go%EF%BC%8C%E8%AE%BE%E7%BD%AEgo-env"><span class="nav-number">1.3.6.</span> <span class="nav-text">在centos7上安装go，设置go env</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%BA%E5%95%A5%E8%BF%99%E4%B8%AA%E5%AF%BC%E5%85%A5%E4%BC%9A%E6%8A%A5%E9%94%99%E5%91%A2%EF%BC%9F-%E5%97%AF%EF%BC%8C%E5%A4%A7%E6%A6%82%E7%8E%87%E5%B0%B1%E6%98%AF%E7%8E%AF%E5%A2%83%E7%9A%84%E9%97%AE%E9%A2%98%EF%BC%8C%E7%94%A8%E4%B8%AAgo-mod-init%E8%A7%A3%E5%86%B3%E5%B0%B1%E8%A1%8C"><span class="nav-number">1.3.7.</span> <span class="nav-text">为啥这个导入会报错呢？ 嗯，大概率就是环境的问题，用个go mod init解决就行</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF2021-01-14-%E8%85%BE%E8%AE%AF%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%A2%AB%E6%94%BB%E5%87%BB"><span class="nav-number">2.</span> <span class="nav-text">背景2021-01-14-腾讯云服务器被攻击</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%87%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">过程</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF2021-01-26-RAKsmart%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%A2%AB%E6%94%BB%E5%87%BB"><span class="nav-number">3.</span> <span class="nav-text">背景2021-01-26-RAKsmart云服务器被攻击</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF2021-01-26-surfshark"><span class="nav-number">4.</span> <span class="nav-text">背景2021-01-26-surfshark</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -419,7 +465,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-count">16</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
