@@ -1,8 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>怎么实现一个分布式kv系统(2)-本地db</title>
-    <url>/2022/01/30/%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%88%86%E5%B8%83%E5%BC%8Fkv%E7%B3%BB%E7%BB%9F-2-%E6%9C%AC%E5%9C%B0db/</url>
+    <title>怎么将youtube视频搬运到B站</title>
+    <url>/2022/02/10/%E6%80%8E%E4%B9%88%E5%B0%86youtube%E8%A7%86%E9%A2%91%E6%90%AC%E8%BF%90B%E7%AB%99/</url>
+    <content><![CDATA[<h3 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h3><p>需求：将YouTube的视频搬运到B站里面来。文章主要讲了以下几点</p>
+<ul>
+<li>怎样下载YouTube视频</li>
+<li>怎样上传B站</li>
+<li>怎样添加字幕</li>
+<li>Mac怎么做视频合集</li>
+</ul>
+<h3 id="前提说明"><a href="#前提说明" class="headerlink" title="前提说明"></a>前提说明</h3><ol>
+<li>B站账号 &amp; YouTube账号</li>
+<li>能访问YouTube的网络环境</li>
+</ol>
+<blockquote>
+<p>笔者使用的Mac电脑，下面的所有操作均基于MacOS</p>
+</blockquote>
+<h3 id="具体操作"><a href="#具体操作" class="headerlink" title="具体操作"></a>具体操作</h3><h4 id="1-安装youtube-dl"><a href="#1-安装youtube-dl" class="headerlink" title="1. 安装youtube-dl"></a>1. 安装<code>youtube-dl</code></h4><p>项目github地址：<a href="https://github.com/ytdl-org/youtube-dl">https://github.com/ytdl-org/youtube-dl</a></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">brew install youtube-dl</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-安装依赖"><a href="#2-安装依赖" class="headerlink" title="2. 安装依赖"></a>2. 安装依赖</h4><p>安装youtube-dl运行需要的依赖</p>
+<ul>
+<li>ffmpeg用来对字幕格式进行转换</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">brew install ffmpeg</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-下载视频"><a href="#3-下载视频" class="headerlink" title="3. 下载视频"></a>3. 下载视频</h4><p>常用操作</p>
+<ul>
+<li><p>下载单个视频</p>
+</li>
+<li><p>下载视频列表</p>
+</li>
+<li><p>下载自动生成的字幕，默认是英文</p>
+</li>
+</ul>
+<blockquote>
+<p>  默认下载的是vvt，这个格式B站上不支持。</p>
+<p>  字幕格式转换请使用字幕格式转换请使用 –write-auto-sub –convert-subs=srt</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 下载单个视频</span></span><br><span class="line">youtube-dl --write-auto-sub --convert-subs=srt https://www.youtube.com/watch?v=clFR9NfObvc</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 下载视频列表</span></span><br><span class="line">youtube-dl --yes-playlist --write-auto-sub --convert-subs=srt -o &#x27;%(playlist)s/%(playlist_index)s-%(title)s.%(ext)s&#x27; https://www.youtube.com/playlist?list=PLWwSgbaBp9XqeuIuTWqpNtvf_EL0I4TJ2</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 其他常用说明</span> </span><br><span class="line">--skip-download 单独下载字幕，不下载文件</span><br><span class="line">--write-sub  下载自动生成的字幕</span><br><span class="line">--convert-subs=srt 转换字幕格式</span><br><span class="line">--embed-subs  视频中嵌入字幕</span><br></pre></td></tr></table></figure>
+
+<!--最简单的是使用--embed-subs，但是笔者尝试了一个视频并未成功，求指教-->
+
+<p>可选：如果使用的是Mac电脑，可直接<a href="https://www.macwk.com/soft/4k-video-downloader">点击这里</a>下载对应软件来下载(灰常简单)。</p>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220210143706701.png" alt="image-20220210143706701" style="zoom:50%;float:left" />
+
+<blockquote>
+<ol>
+<li>如果同时下载并发开得太大，容易发生卡死在最后不同。本人：2个并发，网速2MB/s是OK的</li>
+<li>软件不支持断点下载，退出后全部重来。求好的方法~</li>
+</ol>
+</blockquote>
+<h4 id="4-上传视频"><a href="#4-上传视频" class="headerlink" title="4. 上传视频"></a>4. 上传视频</h4><p>采坑&amp;总结的tips</p>
+<ul>
+<li><p>B站上传的视频需要审核，大部分说是20min</p>
+</li>
+<li><p>会有重复视频检查，今早上传</p>
+</li>
+<li><p>Playlist最好一次性将所有的视频上传，后面有更新在编辑</p>
+</li>
+</ul>
+<h4 id="5-添加字幕-可选"><a href="#5-添加字幕-可选" class="headerlink" title="5. 添加字幕(可选)"></a>5. 添加字幕(可选)</h4><p>字幕和视频并非同步上传</p>
+<ol>
+<li>找到对应的视频页</li>
+<li>点击字幕按钮，并添加上面下载的字幕文件，如下图。</li>
+</ol>
+<img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220210143922087.png" alt="image-20220210143922087" style="zoom:50%;float:left" />
+
+<h4 id="6-发布blog-可选"><a href="#6-发布blog-可选" class="headerlink" title="6. 发布blog(可选)"></a>6. 发布blog(可选)</h4><p>笔者基本是学习一个视频总结一个blog，所以上传视频之后会上传对应的文章. 视频优先，视频好些都是一次性上传的。</p>
+<ul>
+<li>投稿-&gt;专栏管理</li>
+<li>对.md文稿支持不太行</li>
+</ul>
+<h4 id="7-怎么做视频合集"><a href="#7-怎么做视频合集" class="headerlink" title="7. 怎么做视频合集"></a>7. 怎么做视频合集</h4><p>Mac上没有上传工具，没法做视频合集</p>
+<ul>
+<li>在Mac上安装虚拟机，虚拟机上安装window系统，然后安装上传工具，就可以弄合集了。虚拟机是真的很重，不想这样</li>
+<li>github有<a href="https://github.com/WLiK/Move_Video_to_Bilibili/blob/main/readme.md">脚本</a>，需要有一定的程序基础</li>
+<li>求各位指教简单好用的方案</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>youtube</tag>
+        <tag>视频搬运</tag>
+        <tag>添加字幕</tag>
+        <tag>视频合集</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>怎么实现一个分布式kv系统(1)-本地db</title>
+    <url>/2022/01/30/%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%88%86%E5%B8%83%E5%BC%8Fkv%E7%B3%BB%E7%BB%9F-1-%E6%9C%AC%E5%9C%B0db/</url>
     <content><![CDATA[<p>[TOC]</p>
 <h3 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h3><p>本节要实现的有2点</p>
 <ul>
