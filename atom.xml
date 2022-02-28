@@ -76,6 +76,29 @@
   </entry>
   
   <entry>
+    <title>用Go实现一步步实现的分布式Key-Value数据库(0)-实现目标</title>
+    <link href="https://zhangtinglu.github.io/2022/01/30/%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%88%86%E5%B8%83%E5%BC%8Fkv%E7%B3%BB%E7%BB%9F-0-%E5%AE%9E%E7%8E%B0%E7%9B%AE%E6%A0%87/"/>
+    <id>https://zhangtinglu.github.io/2022/01/30/%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%88%86%E5%B8%83%E5%BC%8Fkv%E7%B3%BB%E7%BB%9F-0-%E5%AE%9E%E7%8E%B0%E7%9B%AE%E6%A0%87/</id>
+    <published>2022-01-30T04:00:55.574Z</published>
+    <updated>2022-02-28T10:34:03.338Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h3><p>本节为《用Go实现一步步实现的分布式Key-Value数据库》系列的第一篇，讲了我们这个系列要实现啥目标。</p><h3 id="详细说明"><a href="#详细说明" class="headerlink" title="详细说明"></a>详细说明</h3><h4 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h4><img src="https://gitee.com/zhangtinglu/blog_pic/raw/master/uPic/image-20220228182912030.png" alt="image-20220228182912030" style="zoom:100%; float:left" /><p>SRV1-4：写节点</p><p>RPL1-4：读节点 </p><p>红色箭头: 写流量</p><p>绿色箭头：读流量</p><p>SVR1-&gt;RPL1: 数据同步</p><p>Magic组件主要实现的几点功能：</p><ul><li>写主库，读从库</li><li>数据路由，路由规则：Server(“key”) = Hash(“key”)%NUM</li><li>数据同步，写节点-&gt;读节点</li></ul>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h3 id=&quot;摘要&quot;&gt;&lt;a href=&quot;#摘要&quot; class=&quot;headerlink&quot; title=&quot;摘要&quot;&gt;&lt;/a&gt;摘要&lt;/h3&gt;&lt;p&gt;本节为《用Go实现一步步实现的分布式Key-Value数据库》系列的第一篇，讲了我们这个系列要实现啥目标。&lt;/p&gt;
+&lt;h3 id=&quot;详细说明</summary>
+      
+    
+    
+    
+    
+    <category term="摘要" scheme="https://zhangtinglu.github.io/tags/%E6%91%98%E8%A6%81/"/>
+    
+  </entry>
+  
+  <entry>
     <title>go-包管理</title>
     <link href="https://zhangtinglu.github.io/2022/01/21/go-%E5%8C%85%E7%AE%A1%E7%90%86/"/>
     <id>https://zhangtinglu.github.io/2022/01/21/go-%E5%8C%85%E7%AE%A1%E7%90%86/</id>
